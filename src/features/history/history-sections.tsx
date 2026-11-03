@@ -63,6 +63,8 @@ function VariableChart({ variable, range, marks }: VariableChartProps) {
   return (
     <div style={style} className="min-w-0">
       <HistoryChart
+        variableKey={variable.key}
+        range={range}
         label={variable.label}
         description={variable.description}
         unit={variable.unit}

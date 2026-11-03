@@ -54,6 +54,7 @@ One line chart per variable (dollars, gap, inflation, country risk, reserves, BA
 
 - Long ranges show weekly or monthly closes; min, max and change are computed on every point.
 - Price-level series can switch to a log axis per chart; it is off by default.
+- **Exportar video** downloads a 10-second 1920×1080 animation of the chart as shown, with its window, scale and marks: the line draws itself with a bubble on its latest value, and value labels stay on the start of each period. It is recorded in the browser (MP4 where supported, WebM otherwise), so keep the tab visible while it records.
 - Optional marks add context to every chart and can be combined. The first layer, **Presidencias**, shades each presidential term from its inauguration day and names the president in the tooltip. Active layers are kept in the URL (`?marcas=presidencias`).
 
 ## Data sources

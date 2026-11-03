@@ -1,12 +1,15 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { formatArs, formatDate, formatMonth, formatMonthShort, formatNumber, formatSignedPercent, formatValue, type Unit } from "@/lib/format";
-import { logTicks, periodTicks, type Granularity } from "@/lib/indicators/history";
+import { logTicks, periodTicks, type Granularity, type MonthRange } from "@/lib/indicators/history";
 import { labelFits, spanAt, type AxisSpan, type MarkLayerKey } from "@/lib/indicators/marks";
+import { videoFileName } from "@/lib/indicators/series-animation";
 import type { Point } from "@/lib/indicators/types";
+import type { VideoSeries } from "./series-video";
+import { VideoExportButton } from "./video-export-button";
 
 export type HistorySummary = {
   last: Point;
@@ -41,6 +44,9 @@ function markLabel(text: string, row: number) {
 }
 
 type HistoryChartProps = {
+  /** Stable name of the variable, used for the exported file. */
+  variableKey: string;
+  range: MonthRange;
   label: string;
   description: string;
   unit: Unit;
@@ -88,6 +94,7 @@ const CLOSE_LABEL: Record<Granularity, string | null> = {
 export function HistoryChart(props: HistoryChartProps) {
   const { label, description, unit, frequency, granularity, axis, change, points, marks, summary, source } = props;
   const id = useId();
+  const article = useRef<HTMLElement>(null);
   const canUseLog = props.logScale && points.every((p) => p.value > 0);
   // Linear by default; the log axis is opt-in per chart.
   const [log, setLog] = useState(false);
@@ -102,9 +109,42 @@ export function HistoryChart(props: HistoryChartProps) {
   const closeLabel = frequency === "daily" ? CLOSE_LABEL[granularity] : null;
   const markRows = marks.length ? Math.max(...marks.map((m) => m.row)) + 1 : 0;
   const layers = [...new Set(marks.map((m) => m.layer))];
+  const pointDate = (date: string) =>
+    granularity === "monthly" && frequency === "daily" ? formatMonth(date) : formatPointDate(date, frequency);
+
+  /** The chart as it is now (window, scale and marks), with the page's colours and font. */
+  const videoSeries = (): VideoSeries => {
+    const style = getComputedStyle(article.current ?? document.body);
+    const color = (name: string) => style.getPropertyValue(name).trim();
+    return {
+      title: label,
+      description,
+      periodLabel: `${formatMonth(points[0].date)} – ${formatMonth(points.at(-1)!.date)}`,
+      source,
+      site: window.location.host,
+      points,
+      marks,
+      log,
+      axis,
+      colors: {
+        background: color("--background"),
+        card: color("--card"),
+        foreground: color("--foreground"),
+        muted: color("--muted-foreground"),
+        border: color("--border"),
+        tone: color("--tone"),
+      },
+      fontFamily: style.fontFamily,
+      formatValue: (value) => formatValue(value, unit),
+      formatAxis: (value) => formatAxisValue(value, unit),
+      formatDate: pointDate,
+      formatTick: (date) => formatTick(date, axis),
+    };
+  };
 
   return (
     <article
+      ref={article}
       aria-labelledby={`${id}-title`}
       className="flex min-w-0 flex-col gap-3 rounded-lg border-t-[3px] border-t-tone bg-card p-4 ring-1 ring-foreground/10"
     >
@@ -177,7 +217,7 @@ export function HistoryChart(props: HistoryChartProps) {
                   <div className="flex flex-col gap-0.5 rounded-md border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-sm">
                     <span className="text-muted-foreground">
                       {closeLabel ? `${closeLabel} ` : ""}
-                      {granularity === "monthly" && frequency === "daily" ? formatMonth(point.date) : formatPointDate(point.date, frequency)}
+                      {pointDate(point.date)}
                     </span>
                     <span className="font-medium">{formatValue(point.value, unit)}</span>
                     {layers.map((layer) => {
@@ -223,17 +263,25 @@ export function HistoryChart(props: HistoryChartProps) {
           Fuente: {source}
           {closeLabel ? `. ${granularity === "weekly" ? "Cierres semanales" : "Cierres mensuales"}.` : "."}
         </span>
-        {canUseLog ? (
-          <label className="flex cursor-pointer items-center gap-1.5">
-            <input
-              type="checkbox"
-              className="size-3.5 cursor-pointer accent-[var(--tone)] focus-visible:outline-2 focus-visible:outline-ring"
-              checked={log}
-              onChange={(e) => setLog(e.target.checked)}
+        <div className="flex flex-wrap items-center gap-3">
+          {canUseLog ? (
+            <label className="flex cursor-pointer items-center gap-1.5">
+              <input
+                type="checkbox"
+                className="size-3.5 cursor-pointer accent-[var(--tone)] focus-visible:outline-2 focus-visible:outline-ring"
+                checked={log}
+                onChange={(e) => setLog(e.target.checked)}
+              />
+              Escala logarítmica
+            </label>
+          ) : null}
+          {points.length > 1 ? (
+            <VideoExportButton
+              getSeries={videoSeries}
+              fileName={(extension) => videoFileName(props.variableKey, props.range, extension)}
             />
-            Escala logarítmica
-          </label>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     </article>
   );
