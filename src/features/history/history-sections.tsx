@@ -3,8 +3,9 @@ import { Section, type Tone } from "@/components/dashboard/section";
 import { UnavailableTile } from "@/components/dashboard/stat-tile";
 import type { HistoryGroupId, HistorySnapshot, HistoryVariable } from "@/lib/indicators/history-data";
 import { downsample, granularityFor, inRange, monthsIn, periodChange, type MonthRange } from "@/lib/indicators/history";
+import { MARK_LAYERS, spansOnAxis, type MarkLayerKey } from "@/lib/indicators/marks";
 import type { Point } from "@/lib/indicators/types";
-import { HistoryChart, type AxisLabels, type HistorySummary } from "./history-chart";
+import { HistoryChart, type AxisLabels, type ChartMark, type HistorySummary } from "./history-chart";
 
 const GROUP_TONES: Record<HistoryGroupId, Tone> = { dollars: "dollars", inflation: "inflation", markets: "risk" };
 
@@ -23,7 +24,17 @@ function axisFor(range: MonthRange): AxisLabels {
   return months <= 6 ? "day" : months <= 36 ? "month" : "year";
 }
 
-function VariableChart({ variable, range }: { variable: HistoryVariable; range: MonthRange }) {
+/** The spans of every active layer, placed on this chart's dates; each layer labels its own row. */
+function chartMarks(marks: MarkLayerKey[], points: Point[]): ChartMark[] {
+  const dates = points.map((p) => p.date);
+  return MARK_LAYERS.filter((layer) => marks.includes(layer.key)).flatMap((layer, row) =>
+    spansOnAxis(layer.spans, dates).map((span) => ({ ...span, layer: layer.key, row })),
+  );
+}
+
+type VariableChartProps = { variable: HistoryVariable; range: MonthRange; marks: MarkLayerKey[] };
+
+function VariableChart({ variable, range, marks }: VariableChartProps) {
   const { indicator } = variable;
   const tone = VARIABLE_TONES[variable.key];
   const style = tone ? ({ "--tone": `var(--tone-${tone})` } as CSSProperties) : undefined;
@@ -48,6 +59,7 @@ function VariableChart({ variable, range }: { variable: HistoryVariable; range: 
   }
 
   const granularity = granularityFor(range);
+  const chartPoints = downsample(points, granularity);
   return (
     <div style={style} className="min-w-0">
       <HistoryChart
@@ -61,7 +73,8 @@ function VariableChart({ variable, range }: { variable: HistoryVariable; range: 
         axis={axisFor(range)}
         change={variable.change}
         logScale={variable.logScale}
-        points={downsample(points, granularity)}
+        points={chartPoints}
+        marks={chartMarks(marks, chartPoints)}
         summary={summary}
         source={indicator.source}
       />
@@ -69,12 +82,14 @@ function VariableChart({ variable, range }: { variable: HistoryVariable; range: 
   );
 }
 
-export function HistorySections({ snapshot, range }: { snapshot: HistorySnapshot; range: MonthRange }) {
+type HistorySectionsProps = { snapshot: HistorySnapshot; range: MonthRange; marks: MarkLayerKey[] };
+
+export function HistorySections({ snapshot, range, marks }: HistorySectionsProps) {
   return snapshot.groups.map((group) => (
     <Section key={group.id} id={`history-${group.id}`} title={group.title} description={group.description} tone={GROUP_TONES[group.id]}>
       <div className="grid gap-4 lg:grid-cols-2">
         {group.variables.map((variable) => (
-          <VariableChart key={variable.key} variable={variable} range={range} />
+          <VariableChart key={variable.key} variable={variable} range={range} marks={marks} />
         ))}
       </div>
     </Section>

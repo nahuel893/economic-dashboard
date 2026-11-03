@@ -4,6 +4,7 @@ import { HistorySections } from "@/features/history/history-sections";
 import { RangeFilter } from "@/features/history/range-filter";
 import { HISTORY_FLOOR, resolveRange } from "@/lib/indicators/history";
 import { getHistorySnapshot } from "@/lib/indicators/history-data";
+import { parseMarks } from "@/lib/indicators/marks";
 
 export const metadata: Metadata = {
   title: "Histórico | Tablero económico de Argentina",
@@ -15,10 +16,11 @@ const single = (value: string | string[] | undefined) => (Array.isArray(value) ?
 async function HistoryContent({ searchParams }: Pick<PageProps<"/historico">, "searchParams">) {
   const [params, snapshot] = await Promise.all([searchParams, getHistorySnapshot()]);
   const range = resolveRange({ desde: single(params.desde), hasta: single(params.hasta) }, snapshot.latestMonth);
+  const marks = parseMarks(single(params.marcas));
   return (
     <>
-      <RangeFilter range={range} latest={snapshot.latestMonth} />
-      <HistorySections snapshot={snapshot} range={range} />
+      <RangeFilter range={range} marks={marks} latest={snapshot.latestMonth} />
+      <HistorySections snapshot={snapshot} range={range} marks={marks} />
     </>
   );
 }
@@ -57,7 +59,7 @@ export default function HistoryPage({ searchParams }: PageProps<"/historico">) {
         </p>
         <p>
           Con rangos largos se muestra el cierre de cada semana o de cada mes. Mínimo, máximo y variación se calculan con
-          todos los datos del período. La escala logarítmica se activa sola cuando la serie crece diez veces o más en el
+          todos los datos del período. Las marcas de presidencias empiezan el día de cada asunción. La escala logarítmica se activa sola cuando la serie crece diez veces o más en el
           período: así un mismo ritmo de suba se ve con la misma pendiente.
         </p>
       </footer>

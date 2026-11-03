@@ -1,10 +1,11 @@
 "use client";
 
 import { useId, useState } from "react";
-import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { formatArs, formatDate, formatMonth, formatMonthShort, formatNumber, formatSignedPercent, formatValue, type Unit } from "@/lib/format";
 import { logTicks, periodTicks, spansOrdersOfMagnitude, type Granularity } from "@/lib/indicators/history";
+import { labelFits, spanAt, type AxisSpan, type MarkLayerKey } from "@/lib/indicators/marks";
 import type { Point } from "@/lib/indicators/types";
 
 export type HistorySummary = {
@@ -17,6 +18,28 @@ export type HistorySummary = {
 
 export type AxisLabels = "day" | "month" | "year";
 
+/** A span of an active mark layer; `row` stacks the labels of different layers. */
+export type ChartMark = AxisSpan & { layer: MarkLayerKey; row: number };
+
+/** Height of one row of mark labels above the plot. */
+const MARK_ROW = 14;
+
+type LabelViewBox = { x?: number; y?: number; width?: number };
+
+/** Draws a span's label centred above it, or nothing when the span is too narrow for it. */
+function markLabel(text: string, row: number) {
+  function MarkLabel({ viewBox }: { viewBox?: LabelViewBox }) {
+    const { x = 0, y = 0, width = 0 } = viewBox ?? {};
+    if (!labelFits(text, width)) return <g />;
+    return (
+      <text x={x + width / 2} y={y - 4 - row * MARK_ROW} textAnchor="middle" fontSize={10} fill="var(--muted-foreground)">
+        {text}
+      </text>
+    );
+  }
+  return MarkLabel;
+}
+
 type HistoryChartProps = {
   label: string;
   description: string;
@@ -28,6 +51,7 @@ type HistoryChartProps = {
   /** Whether the series may use a log axis at all (strictly positive levels). */
   logScale: boolean;
   points: Point[];
+  marks: ChartMark[];
   summary: HistorySummary;
   source: string;
 };
@@ -62,7 +86,7 @@ const CLOSE_LABEL: Record<Granularity, string | null> = {
 };
 
 export function HistoryChart(props: HistoryChartProps) {
-  const { label, description, unit, frequency, granularity, axis, change, points, summary, source } = props;
+  const { label, description, unit, frequency, granularity, axis, change, points, marks, summary, source } = props;
   const id = useId();
   const canUseLog = props.logScale && points.every((p) => p.value > 0);
   // Log by default only when a linear axis would flatten the early part of the window.
@@ -76,6 +100,8 @@ export function HistoryChart(props: HistoryChartProps) {
   // Years and months are labelled once, where they start; days use the library's spacing.
   const xTicks = axis === "day" ? undefined : periodTicks(points.map((p) => p.date), axis, 8);
   const closeLabel = frequency === "daily" ? CLOSE_LABEL[granularity] : null;
+  const markRows = marks.length ? Math.max(...marks.map((m) => m.row)) + 1 : 0;
+  const layers = [...new Set(marks.map((m) => m.layer))];
 
   return (
     <article
@@ -97,8 +123,30 @@ export function HistoryChart(props: HistoryChartProps) {
 
       {points.length > 1 ? (
         <ChartContainer config={config} className="aspect-auto h-56 w-full min-w-0" initialDimension={{ width: 300, height: 224 }}>
-          <LineChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <LineChart data={points} margin={{ top: 8 + markRows * MARK_ROW, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke="var(--border)" />
+            {marks.map((mark) => (
+              <ReferenceArea
+                key={`${mark.layer}-${mark.from}`}
+                x1={mark.x1}
+                x2={mark.x2}
+                fill="var(--foreground)"
+                fillOpacity={mark.shade ? 0.07 : 0.025}
+                ifOverflow="hidden"
+                label={markLabel(mark.label, mark.row)}
+              />
+            ))}
+            {marks
+              .filter((mark) => mark.edge)
+              .map((mark) => (
+                <ReferenceLine
+                  key={`${mark.layer}-${mark.from}-edge`}
+                  x={mark.x1}
+                  stroke="var(--muted-foreground)"
+                  strokeOpacity={0.6}
+                  strokeDasharray="3 3"
+                />
+              ))}
             <XAxis
               dataKey="date"
               tickLine={false}
@@ -132,6 +180,14 @@ export function HistoryChart(props: HistoryChartProps) {
                       {granularity === "monthly" && frequency === "daily" ? formatMonth(point.date) : formatPointDate(point.date, frequency)}
                     </span>
                     <span className="font-medium">{formatValue(point.value, unit)}</span>
+                    {layers.map((layer) => {
+                      const span = spanAt(marks.filter((m) => m.layer === layer), point.date);
+                      return span ? (
+                        <span key={layer} className="text-muted-foreground">
+                          {span.name}
+                        </span>
+                      ) : null;
+                    })}
                   </div>
                 );
               }}

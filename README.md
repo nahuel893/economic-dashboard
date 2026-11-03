@@ -54,6 +54,7 @@ One line chart per variable (dollars, gap, inflation, country risk, reserves, BA
 
 - Long ranges show weekly or monthly closes; min, max and change are computed on every point.
 - Series that grow tenfold or more switch to a log axis, which you can turn off per chart.
+- Optional marks add context to every chart and can be combined. The first layer, **Presidencias**, shades each presidential term from its inauguration day and names the president in the tooltip. Active layers are kept in the URL (`?marcas=presidencias`).
 
 ## Data sources
 
