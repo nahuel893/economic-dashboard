@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Argentina economic dashboard
 
-## Getting Started
+A fast, public dashboard of Argentina's economy: the dollar in all its flavours, inflation, reserves, rates and markets, from official and market sources. No database, no keys, no sign-up.
 
-First, run the development server:
+The UI is in Spanish (`es-AR`).
+
+![Next.js 16](https://img.shields.io/badge/Next.js-16-000?logo=nextdotjs)
+![React 19](https://img.shields.io/badge/React-19-149eca?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
+![Tailwind CSS 4](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss&logoColor=white)
+![Vitest](https://img.shields.io/badge/tested_with-Vitest-6e9f18?logo=vitest&logoColor=white)
+
+![The "Hoy" tab: dollar quotes, exchange-rate pressure and comparison charts](docs/home.png)
+
+## Quick start
+
+Requires Node 24.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Command | What it does |
+|---------|--------------|
+| `npm run dev` | Development server |
+| `npm run build && npm start` | Production build and server |
+| `npm test` | Unit tests (parsers, statistics, history windows) |
+| `npm run lint` | ESLint |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+No environment variables are needed: every source is a free, public API.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## What's inside
 
-## Learn More
+### Hoy: today's numbers
 
-To learn more about Next.js, take a look at the following resources:
+| Section | Indicators |
+|---------|------------|
+| Dólar | Oficial, blue, MEP, CCL |
+| Presión cambiaria | CCL vs. oficial gap, wholesale rate (A3500) inside the exchange-rate band, crypto dollar (USDT) |
+| Inflación | Monthly, year-on-year, expected in 12 months (REM median) |
+| Dinero y crédito | Reserves, monetary base, private M2, deposits, private-sector loans |
+| Tasas | 30-day term deposit, TAMAR, BADLAR, personal loans, overdrafts, real rate |
+| Mercados | Country risk, Merval in pesos and in CCL dollars |
+| Índices | UVA, CER, ICL |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The hot indicators refresh every 2 minutes in the browser. Each section ends with a comparison panel: a chart with selectable series (level, base 100 or change, depending on what the section measures) and a correlation matrix with 95 % confidence intervals.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Histórico: the series over time
 
-## Deploy on Vercel
+![The "Histórico" tab: one line chart per variable with a month and year range filter](docs/history.png)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+One line chart per variable (dollars, gap, inflation, country risk, reserves, BADLAR) since 2003, with presets (1, 3, 5, 10 years, all) or any month-to-month range. The range lives in the URL, so every view can be shared.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Long ranges show weekly or monthly closes; min, max and change are computed on every point.
+- Series that grow tenfold or more switch to a log axis, which you can turn off per chart.
+
+## Data sources
+
+| Source | Used for |
+|--------|----------|
+| [dolarapi.com](https://dolarapi.com) | Live dollar quotes |
+| [ArgentinaDatos](https://argentinadatos.com) | Dollar history, inflation, country risk |
+| [BCRA, Estadísticas v4](https://www.bcra.gob.ar/en/central-bank-api-catalog/) | Reserves, money, rates, REM, indexes, exchange-rate band |
+| [BYMA open data](https://open.bymadata.com.ar) | Merval |
+
+If a source fails, only its tiles show "No disponible"; the rest of the page still renders. Market data may be delayed. Nothing here is financial advice.
+
+## How it works
+
+```text
+src/
+├── app/               routes: / (Hoy), /historico, /api/hot
+├── features/          UI by feature: hot, macro, compare, history
+├── components/        shared UI (shadcn/ui, nav, tiles)
+└── lib/
+    ├── sources/       HTTP clients and response parsers
+    └── indicators/    snapshots, statistics, history windows (pure, tested)
+```
+
+- **Caching without a database.** Next.js Cache Components (`"use cache"` + `cacheLife`) keep each snapshot for minutes (live data) or a day (history), so the upstream APIs are hit rarely and pages load in milliseconds.
+- **Server first.** Pages render on the server; only the charts, the range filter and the live polling (SWR on `/api/hot`) run in the browser.
+- **Pure logic, tested.** Parsing, statistics and history windows are plain functions covered by Vitest.
+
+## Deploy
+
+The repo is ready for [Vercel](https://vercel.com/new): import it and deploy with the defaults. `vercel.json` pins the São Paulo region (`gru1`), close to the Argentine APIs, and `package.json` pins Node 24.
