@@ -14,7 +14,7 @@ export default async function Home() {
 
   return (
     <HotSnapshotProvider initial={hot}>
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-12 px-4 py-10 sm:px-6 lg:px-8">
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-12 px-4 pb-10 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-2">
             <h1 className="text-4xl font-extrabold tracking-tight [font-stretch:125%] sm:text-5xl">

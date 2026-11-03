@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Encode_Sans, Geist_Mono } from "next/font/google";
+import { SiteNav } from "@/components/dashboard/site-nav";
 import "./globals.css";
 
 // Encode Sans: designed in Argentina, with a variable width axis used for headlines.
@@ -25,7 +26,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es-AR"
       className={`${encodeSans.variable} ${geistMono.variable} dark h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <SiteNav />
+        {children}
+      </body>
     </html>
   );
 }

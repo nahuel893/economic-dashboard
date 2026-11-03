@@ -45,6 +45,35 @@ export async function getCountryRiskHistory(): Promise<Point[]> {
   return raw.map((r) => ({ date: r.fecha, value: r.valor }));
 }
 
+/** Monthly INDEC indexes published by ArgentinaDatos, e.g. "inflacion" or "inflacionInteranual". */
+export async function getMonthlyIndexHistory(index: string): Promise<Point[]> {
+  "use cache";
+  cacheLife(CACHE.daily);
+  const raw = await fetchJson<{ valor: number; fecha: string }[]>(
+    `https://api.argentinadatos.com/v1/finanzas/indices/${index}`,
+  );
+  return raw.map((r) => ({ date: r.fecha, value: r.valor }));
+}
+
+/** Page size of BCRA Estadísticas v4; longer histories need several requests. */
+const BCRA_PAGE = 3000;
+
+/** A BCRA series from `from` (YYYY-MM-DD) to today, paging through the whole range. */
+export async function getBcraHistory(id: number, from: string): Promise<Point[]> {
+  "use cache";
+  cacheLife(CACHE.daily);
+  const to = new Date().toISOString().slice(0, 10);
+  const points: Point[] = [];
+  for (let offset = 0; ; offset += BCRA_PAGE) {
+    const raw = await fetchJson<Parameters<typeof parseBcraSeries>[0] & { metadata: { resultset: { count: number } } }>(
+      `https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/${id}?desde=${from}&hasta=${to}&limit=${BCRA_PAGE}&offset=${offset}`,
+    );
+    points.push(...parseBcraSeries(raw));
+    if (offset + BCRA_PAGE >= raw.metadata.resultset.count) break;
+  }
+  return points.sort((a, b) => a.date.localeCompare(b.date));
+}
+
 /** BCRA "Principales Variables" ids used by the dashboard. */
 export const BCRA_VARIABLES = {
   wholesaleDollar: 5,
