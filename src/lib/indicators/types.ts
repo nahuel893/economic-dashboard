@@ -18,7 +18,10 @@ export type DollarData = {
   quote: Quote;
   /** Sell price at the last close before the live quote's day. */
   previousClose: number | null;
+  /** Last 30 points, for the card sparkline. */
   history: Point[];
+  /** Longer window used by the section comparison chart and correlations. */
+  longHistory: Point[];
 };
 
 export type GapData = { valuePct: number; ccl: number; official: number; history: Point[] };
@@ -31,6 +34,9 @@ export type BandData = {
   toCeilingPct: number;
   date: string;
   history: Point[];
+  longHistory: Point[];
+  lowerHistory: Point[];
+  upperHistory: Point[];
 };
 
 export type CountryRiskData = { value: number; date: string; change: number | null; history: Point[] };
@@ -47,7 +53,12 @@ export type IndexData = {
 
 export type MervalData = IndexData & { valueUsd: number | null };
 
-export type CryptoDollarData = { quote: Quote; previousClose: number | null; history: Point[] };
+export type CryptoDollarData = {
+  quote: Quote;
+  previousClose: number | null;
+  history: Point[];
+  longHistory: Point[];
+};
 
 export type HotSnapshot = {
   generatedAt: string;

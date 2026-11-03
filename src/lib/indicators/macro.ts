@@ -1,9 +1,9 @@
 import { cacheLife } from "next/cache";
 import type { Unit } from "@/lib/format";
 import { CACHE, SOURCES, getBcraSeries } from "@/lib/sources/clients";
-import { realRate, tnaToTea, toSeries, type Series } from "./calc";
+import { lastN, realRate, tnaToTea, toSeries, type Series } from "./calc";
 import { settle } from "./settle";
-import type { Indicator } from "./types";
+import type { Indicator, Point } from "./types";
 
 /** How a change is shown: relative change in percent, or absolute change in percentage points. */
 export type DeltaMode = "percent" | "points";
@@ -72,12 +72,16 @@ const GROUPS: { id: MacroGroupId; title: string; description: string; variables:
   },
 ];
 
-const LOOKBACK: Record<Frequency, { days: number; points: number }> = {
-  daily: { days: 45, points: 30 },
-  monthly: { days: 400, points: 13 },
+/** `points` feed the card chart; `longPoints` feed the section comparison and correlations. */
+const LOOKBACK: Record<Frequency, { days: number; points: number; longPoints: number }> = {
+  daily: { days: 130, points: 30, longPoints: 90 },
+  // 15 months: earlier data belongs to the 2024-25 disinflation regime.
+  monthly: { days: 800, points: 13, longPoints: 15 },
 };
 
-export type MacroItem = Omit<MacroVariable, "bcraId"> & { indicator: Indicator<Series> };
+export type MacroSeries = Series & { longHistory: Point[] };
+
+export type MacroItem = Omit<MacroVariable, "bcraId"> & { indicator: Indicator<MacroSeries> };
 
 export type MacroGroup = { id: MacroGroupId; title: string; description: string; items: MacroItem[] };
 
@@ -100,10 +104,11 @@ export async function getMacroSnapshot(): Promise<MacroSnapshot> {
       ...group,
       items: await Promise.all(
         variables.map(async ({ bcraId, ...variable }) => {
-          const { days, points } = LOOKBACK[variable.frequency];
-          const indicator = await settle(SOURCES.bcra, async () =>
-            toSeries(await getBcraSeries(bcraId, days, "daily"), points),
-          );
+          const { days, points, longPoints } = LOOKBACK[variable.frequency];
+          const indicator = await settle<MacroSeries>(SOURCES.bcra, async () => {
+            const all = await getBcraSeries(bcraId, days, "daily");
+            return { ...toSeries(all, points), longHistory: lastN(all, longPoints) };
+          });
           return { ...variable, indicator };
         }),
       ),

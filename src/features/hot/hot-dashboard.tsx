@@ -3,6 +3,8 @@
 import { createContext, useContext, type ReactNode } from "react";
 import useSWR from "swr";
 import { Section } from "@/components/dashboard/section";
+import { ComparisonPanel } from "@/features/compare/comparison-panel";
+import { dollarsSpec, pressureSpec } from "@/features/compare/specs";
 import { formatDate } from "@/lib/format";
 import type { HotSnapshot } from "@/lib/indicators/types";
 import {
@@ -69,8 +71,14 @@ export function LiveStatus() {
 export function DollarSection() {
   const { snapshot } = useHot();
   return (
-    <Section id="dollars" title="Dólar" description="Cotizaciones de venta." tone="dollars">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <Section
+      id="dollars"
+      title="Dólar"
+      description="Cotizaciones de venta."
+      tone="dollars"
+      aside={<ComparisonPanel title="Comparar cotizaciones" spec={dollarsSpec(snapshot)} />}
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
         {snapshot.dollars.map((dollar, i) => (
           <DollarTile key={dollar.status === "ok" ? dollar.data.kind : i} indicator={dollar} />
         ))}
@@ -87,8 +95,9 @@ export function PressureSection() {
       title="Presión cambiaria"
       description="Qué tan tensionado está el tipo de cambio."
       tone="pressure"
+      aside={<ComparisonPanel title="Mayorista, cripto y banda cambiaria" spec={pressureSpec(snapshot)} />}
     >
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <GapTile indicator={snapshot.gap} />
         <BandTile indicator={snapshot.band} />
         <CryptoDollarTile indicator={snapshot.cryptoDollar} />

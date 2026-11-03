@@ -9,6 +9,8 @@ type SectionProps = {
   description?: string;
   tone: Tone;
   className?: string;
+  /** Optional side panel; cards move to the left and the panel sticks on the right. */
+  aside?: ReactNode;
   children: ReactNode;
 };
 
@@ -16,7 +18,7 @@ type SectionProps = {
  * A themed block of indicators. Its tone colors the rail, the card rules and
  * every chart inside it, so each topic is recognizable at a glance.
  */
-export function Section({ id, title, description, tone, className, children }: SectionProps) {
+export function Section({ id, title, description, tone, className, aside, children }: SectionProps) {
   return (
     <section
       aria-labelledby={`${id}-heading`}
@@ -29,7 +31,14 @@ export function Section({ id, title, description, tone, className, children }: S
         </h2>
         {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
       </div>
-      {children}
+      {aside ? (
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,6fr)]">
+          <div className="min-w-0">{children}</div>
+          <aside className="min-w-0 lg:sticky lg:top-6">{aside}</aside>
+        </div>
+      ) : (
+        children
+      )}
     </section>
   );
 }

@@ -1,5 +1,7 @@
 import { ColumnChart } from "@/components/dashboard/column-chart";
 import { Section, type Tone } from "@/components/dashboard/section";
+import { ComparisonPanel } from "@/features/compare/comparison-panel";
+import { macroSpec } from "@/features/compare/specs";
 import { Sparkline } from "@/components/dashboard/sparkline";
 import { StatTile, UnavailableTile, type Delta } from "@/components/dashboard/stat-tile";
 import { formatDate, formatMonth, formatNumber, formatPercent, formatSignedPercent, formatValue } from "@/lib/format";
@@ -14,11 +16,11 @@ const TONES: Record<MacroGroupId, Tone> = {
   indexes: "indexes",
 };
 
-const GRID: Record<MacroGroupId, string> = {
-  money: "sm:grid-cols-2 lg:grid-cols-3",
-  inflation: "md:grid-cols-3",
-  rates: "sm:grid-cols-2 lg:grid-cols-3",
-  indexes: "md:grid-cols-3",
+const PANEL_TITLES: Record<MacroGroupId, string> = {
+  money: "Cuánto creció cada agregado",
+  inflation: "Inflación observada y esperada",
+  rates: "Comparar tasas",
+  indexes: "Evolución de los índices de ajuste",
 };
 
 function seriesDelta(series: Series, item: MacroItem): Delta | null {
@@ -91,9 +93,16 @@ function RealRateTile({ indicator }: { indicator: Indicator<RealRateData> }) {
 }
 
 function MacroSection({ group, realRate }: { group: MacroGroup; realRate?: Indicator<RealRateData> }) {
+  const spec = macroSpec(group);
   return (
-    <Section id={group.id} title={group.title} description={group.description} tone={TONES[group.id]}>
-      <div className={`grid gap-4 ${GRID[group.id]}`}>
+    <Section
+      id={group.id}
+      title={group.title}
+      description={group.description}
+      tone={TONES[group.id]}
+      aside={spec ? <ComparisonPanel title={PANEL_TITLES[group.id]} spec={spec} /> : undefined}
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
         {realRate ? <RealRateTile indicator={realRate} /> : null}
         {group.items.map((item) => (
           <MacroTile key={item.key} item={item} />
