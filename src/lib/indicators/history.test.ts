@@ -9,7 +9,6 @@ import {
   periodTicks,
   resolveRange,
   shiftMonths,
-  spansOrdersOfMagnitude,
 } from "./history";
 
 describe("shiftMonths", () => {
@@ -75,15 +74,6 @@ describe("downsample", () => {
       { date: "2026-01-30", value: 4 },
       { date: "2026-02-02", value: 5 },
     ]);
-  });
-});
-
-describe("spansOrdersOfMagnitude", () => {
-  it("is true when the largest value is at least ten times the smallest", () => {
-    const points = (values: number[]) => values.map((value, i) => ({ date: `2026-01-0${i + 1}`, value }));
-    expect(spansOrdersOfMagnitude(points([4, 20, 40]))).toBe(true);
-    expect(spansOrdersOfMagnitude(points([1100, 1500]))).toBe(false);
-    expect(spansOrdersOfMagnitude(points([0, 40]))).toBe(false);
   });
 });
 

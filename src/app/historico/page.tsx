@@ -59,8 +59,8 @@ export default function HistoryPage({ searchParams }: PageProps<"/historico">) {
         </p>
         <p>
           Con rangos largos se muestra el cierre de cada semana o de cada mes. Mínimo, máximo y variación se calculan con
-          todos los datos del período. Las marcas de presidencias empiezan el día de cada asunción. La escala logarítmica se activa sola cuando la serie crece diez veces o más en el
-          período: así un mismo ritmo de suba se ve con la misma pendiente.
+          todos los datos del período. Las marcas de presidencias empiezan el día de cada asunción. La escala logarítmica, apagada por defecto, se puede activar en cada gráfico que la admite:
+          así un mismo ritmo de suba se ve con la misma pendiente.
         </p>
       </footer>
     </main>

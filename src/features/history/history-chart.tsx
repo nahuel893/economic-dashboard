@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { formatArs, formatDate, formatMonth, formatMonthShort, formatNumber, formatSignedPercent, formatValue, type Unit } from "@/lib/format";
-import { logTicks, periodTicks, spansOrdersOfMagnitude, type Granularity } from "@/lib/indicators/history";
+import { logTicks, periodTicks, type Granularity } from "@/lib/indicators/history";
 import { labelFits, spanAt, type AxisSpan, type MarkLayerKey } from "@/lib/indicators/marks";
 import type { Point } from "@/lib/indicators/types";
 
@@ -89,8 +89,8 @@ export function HistoryChart(props: HistoryChartProps) {
   const { label, description, unit, frequency, granularity, axis, change, points, marks, summary, source } = props;
   const id = useId();
   const canUseLog = props.logScale && points.every((p) => p.value > 0);
-  // Log by default only when a linear axis would flatten the early part of the window.
-  const [log, setLog] = useState(() => canUseLog && spansOrdersOfMagnitude(points));
+  // Linear by default; the log axis is opt-in per chart.
+  const [log, setLog] = useState(false);
   const config = { value: { label, color: "var(--tone)" } } satisfies ChartConfig;
 
   const values = points.map((p) => p.value);

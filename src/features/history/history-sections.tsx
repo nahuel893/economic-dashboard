@@ -63,8 +63,6 @@ function VariableChart({ variable, range, marks }: VariableChartProps) {
   return (
     <div style={style} className="min-w-0">
       <HistoryChart
-        // A new range resets the log toggle to what suits that window.
-        key={`${range.from}-${range.to}`}
         label={variable.label}
         description={variable.description}
         unit={variable.unit}

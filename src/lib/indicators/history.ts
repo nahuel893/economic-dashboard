@@ -70,17 +70,6 @@ export function downsample(points: Point[], granularity: Granularity): Point[] {
 }
 
 /**
- * True when a positive series grows at least tenfold within the window. On a
- * linear axis its early part would look flat; a log axis shows equal growth
- * rates as equal slopes.
- */
-export function spansOrdersOfMagnitude(points: Point[]): boolean {
-  const values = points.map((p) => p.value);
-  const min = Math.min(...values);
-  return min > 0 && Math.max(...values) / min >= 10;
-}
-
-/**
  * Ticks for a log axis within [min, max]: 1, 2 and 5 times each power of ten,
  * or only the powers of ten when the domain spans more than two of them.
  */
