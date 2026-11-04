@@ -12,6 +12,9 @@ import type { Indicator } from "@/lib/indicators/types";
 const TONES: Record<MacroGroupId, Tone> = {
   money: "money",
   inflation: "inflation",
+  // Reuses the amber of exchange-rate pressure: an eighth hue would be too close
+  // to an existing one, and that section is never next to this one.
+  activity: "pressure",
   rates: "rates",
   indexes: "indexes",
 };
@@ -19,6 +22,7 @@ const TONES: Record<MacroGroupId, Tone> = {
 const PANEL_TITLES: Record<MacroGroupId, string> = {
   money: "Cuánto creció cada agregado",
   inflation: "Inflación observada y esperada",
+  activity: "Actividad interanual y mensual",
   rates: "Comparar tasas",
   indexes: "Evolución de los índices de ajuste",
 };

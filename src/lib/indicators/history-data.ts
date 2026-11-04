@@ -1,12 +1,21 @@
 import { cacheLife } from "next/cache";
 import type { Unit } from "@/lib/format";
-import { CACHE, getBcraHistory, getCountryRiskHistory, getDollarHistory, getMonthlyIndexHistory, SOURCES } from "@/lib/sources/clients";
-import { gapHistory } from "./calc";
+import {
+  CACHE,
+  getBcraHistory,
+  getCountryRiskHistory,
+  getDollarHistory,
+  getIndecMonthlySeries,
+  getMonthlyIndexHistory,
+  INDEC_SERIES,
+  SOURCES,
+} from "@/lib/sources/clients";
+import { changeOverMonths, gapHistory } from "./calc";
 import { HISTORY_FLOOR } from "./history";
 import { settle } from "./settle";
 import type { Indicator, Point } from "./types";
 
-export type HistoryGroupId = "dollars" | "inflation" | "markets";
+export type HistoryGroupId = "dollars" | "inflation" | "activity" | "markets";
 
 export type HistoryVariable = {
   key: string;
@@ -40,7 +49,11 @@ export async function getHistorySnapshot(): Promise<HistorySnapshot> {
   "use cache";
   cacheLife(CACHE.daily);
 
-  const [blue, official, mep, ccl, gap, monthly, yearly, risk, reserves, badlar] = await Promise.all([
+  // One request for both EMAE series, shared by the two activity charts.
+  const emae = getIndecMonthlySeries([INDEC_SERIES.emae, INDEC_SERIES.emaeSeasonallyAdjusted]);
+  emae.catch(() => undefined);
+
+  const [blue, official, mep, ccl, gap, monthly, yearly, activity, activityYearly, risk, reserves, badlar] = await Promise.all([
     settle(SOURCES.argentinaDatos, dollar("blue")),
     settle(SOURCES.argentinaDatos, dollar("oficial")),
     settle(SOURCES.argentinaDatos, dollar("bolsa")),
@@ -50,6 +63,9 @@ export async function getHistorySnapshot(): Promise<HistorySnapshot> {
     ),
     settle(SOURCES.argentinaDatos, () => getMonthlyIndexHistory("inflacion").then(fromFloor)),
     settle(SOURCES.argentinaDatos, () => getMonthlyIndexHistory("inflacionInteranual").then(fromFloor)),
+    settle(SOURCES.indec, async () => fromFloor((await emae)[1])),
+    // Computed on the whole series, so the first year after the floor has its comparison month.
+    settle(SOURCES.indec, async () => fromFloor(changeOverMonths((await emae)[0], 12))),
     settle(SOURCES.argentinaDatos, () => getCountryRiskHistory().then(fromFloor)),
     settle(SOURCES.bcra, () => getBcraHistory(1, BCRA_FROM)),
     settle(SOURCES.bcra, () => getBcraHistory(7, BCRA_FROM)),
@@ -112,6 +128,33 @@ export async function getHistorySnapshot(): Promise<HistorySnapshot> {
           change: "points",
           logScale: false,
           indicator: yearly,
+        },
+      ],
+    },
+    {
+      id: "activity",
+      title: "Actividad económica",
+      description: "El PBI mes a mes: Estimador Mensual de Actividad Económica (EMAE) del INDEC.",
+      variables: [
+        {
+          key: "activity",
+          label: "Nivel de actividad",
+          description: "Índice desestacionalizado, base 2004 = 100: si la economía produce más o menos.",
+          unit: "index2",
+          frequency: "monthly",
+          change: "percent",
+          logScale: false,
+          indicator: activity,
+        },
+        {
+          key: "activityYearly",
+          label: "Actividad, variación interanual",
+          description: "Contra el mismo mes del año anterior, con la serie original.",
+          unit: "percent",
+          frequency: "monthly",
+          change: "points",
+          logScale: false,
+          indicator: activityYearly,
         },
       ],
     },

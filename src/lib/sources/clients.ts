@@ -1,7 +1,8 @@
 import { cacheLife } from "next/cache";
+import { monthEnd } from "@/lib/indicators/history";
 import type { IndexData, Point, Quote } from "@/lib/indicators/types";
 import { fetchJson } from "./http";
-import { parseBcraSeries, parseBymaIndex, parseDailyQuotes, parseDolarApi } from "./parsers";
+import { parseBcraSeries, parseBymaIndex, parseDailyQuotes, parseDatosSeries, parseDolarApi } from "./parsers";
 
 /**
  * Cache lifetimes by how fast each kind of data moves. Every client caches its
@@ -12,67 +13,112 @@ export const CACHE = {
   daily: { stale: 300, revalidate: 3600, expire: 86400 },
 } as const;
 
+type CacheProfile = (typeof CACHE)[keyof typeof CACHE];
+
+/** How long a failed request is remembered before the source is tried again. */
+const FAILURE_CACHE = { stale: 30, revalidate: 60, expire: 300 } as const;
+
+/** Result of a cached request: cached functions must not reject (see `attempt`). */
+type Outcome<T> = { ok: true; value: T } | { ok: false; message: string };
+
+/**
+ * Runs a request inside a "use cache" function and turns a failure into a
+ * value. A cached function that rejects while a page is prerendered fails the
+ * whole build (and hides its message in production), even when the caller
+ * catches the error, so failures leave the cache as data and are thrown again
+ * by `unwrap`, outside of it. Failures are kept only briefly.
+ */
+async function attempt<T>(life: CacheProfile, load: () => Promise<T>): Promise<Outcome<T>> {
+  try {
+    const value = await load();
+    cacheLife(life);
+    return { ok: true, value };
+  } catch (error) {
+    cacheLife(FAILURE_CACHE);
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function unwrap<T>(outcome: Outcome<T>): T {
+  if (!outcome.ok) throw new Error(outcome.message);
+  return outcome.value;
+}
+
 export const SOURCES = {
   dolarApi: "dolarapi.com",
   argentinaDatos: "ArgentinaDatos",
   bcra: "BCRA",
   byma: "BYMA",
   dollars: "dolarapi.com · ArgentinaDatos",
+  indec: "INDEC vía datos.gob.ar",
 } as const;
 
-export async function getLiveDollarQuotes(): Promise<Record<string, Quote>> {
+async function cachedLiveDollarQuotes(): Promise<Outcome<Record<string, Quote>>> {
   "use cache";
-  cacheLife(CACHE.live);
-  const raw = await fetchJson<Parameters<typeof parseDolarApi>[0]>("https://dolarapi.com/v1/dolares");
-  return parseDolarApi(raw);
+  return attempt(CACHE.live, async () =>
+    parseDolarApi(await fetchJson<Parameters<typeof parseDolarApi>[0]>("https://dolarapi.com/v1/dolares")),
+  );
 }
 
-export async function getDollarHistory(kind: string): Promise<Point[]> {
+export const getLiveDollarQuotes = async () => unwrap(await cachedLiveDollarQuotes());
+
+async function cachedDollarHistory(kind: string): Promise<Outcome<Point[]>> {
   "use cache";
-  cacheLife(CACHE.daily);
-  const raw = await fetchJson<Parameters<typeof parseDailyQuotes>[0]>(
-    `https://api.argentinadatos.com/v1/cotizaciones/dolares/${kind}`,
+  return attempt(CACHE.daily, async () =>
+    parseDailyQuotes(
+      await fetchJson<Parameters<typeof parseDailyQuotes>[0]>(`https://api.argentinadatos.com/v1/cotizaciones/dolares/${kind}`),
+    ),
   );
-  return parseDailyQuotes(raw);
 }
 
-export async function getCountryRiskHistory(): Promise<Point[]> {
+export const getDollarHistory = async (kind: string) => unwrap(await cachedDollarHistory(kind));
+
+async function cachedCountryRiskHistory(): Promise<Outcome<Point[]>> {
   "use cache";
-  cacheLife(CACHE.live);
-  const raw = await fetchJson<{ valor: number; fecha: string }[]>(
-    "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais",
-  );
-  return raw.map((r) => ({ date: r.fecha, value: r.valor }));
+  return attempt(CACHE.live, async () => {
+    const raw = await fetchJson<{ valor: number; fecha: string }[]>(
+      "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais",
+    );
+    return raw.map((r) => ({ date: r.fecha, value: r.valor }));
+  });
+}
+
+export const getCountryRiskHistory = async () => unwrap(await cachedCountryRiskHistory());
+
+async function cachedMonthlyIndexHistory(index: string): Promise<Outcome<Point[]>> {
+  "use cache";
+  return attempt(CACHE.daily, async () => {
+    const raw = await fetchJson<{ valor: number; fecha: string }[]>(
+      `https://api.argentinadatos.com/v1/finanzas/indices/${index}`,
+    );
+    return raw.map((r) => ({ date: r.fecha, value: r.valor }));
+  });
 }
 
 /** Monthly INDEC indexes published by ArgentinaDatos, e.g. "inflacion" or "inflacionInteranual". */
-export async function getMonthlyIndexHistory(index: string): Promise<Point[]> {
-  "use cache";
-  cacheLife(CACHE.daily);
-  const raw = await fetchJson<{ valor: number; fecha: string }[]>(
-    `https://api.argentinadatos.com/v1/finanzas/indices/${index}`,
-  );
-  return raw.map((r) => ({ date: r.fecha, value: r.valor }));
-}
+export const getMonthlyIndexHistory = async (index: string) => unwrap(await cachedMonthlyIndexHistory(index));
 
 /** Page size of BCRA Estadísticas v4; longer histories need several requests. */
 const BCRA_PAGE = 3000;
 
-/** A BCRA series from `from` (YYYY-MM-DD) to today, paging through the whole range. */
-export async function getBcraHistory(id: number, from: string): Promise<Point[]> {
+async function cachedBcraHistory(id: number, from: string): Promise<Outcome<Point[]>> {
   "use cache";
-  cacheLife(CACHE.daily);
-  const to = new Date().toISOString().slice(0, 10);
-  const points: Point[] = [];
-  for (let offset = 0; ; offset += BCRA_PAGE) {
-    const raw = await fetchJson<Parameters<typeof parseBcraSeries>[0] & { metadata: { resultset: { count: number } } }>(
-      `https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/${id}?desde=${from}&hasta=${to}&limit=${BCRA_PAGE}&offset=${offset}`,
-    );
-    points.push(...parseBcraSeries(raw));
-    if (offset + BCRA_PAGE >= raw.metadata.resultset.count) break;
-  }
-  return points.sort((a, b) => a.date.localeCompare(b.date));
+  return attempt(CACHE.daily, async () => {
+    const to = new Date().toISOString().slice(0, 10);
+    const points: Point[] = [];
+    for (let offset = 0; ; offset += BCRA_PAGE) {
+      const raw = await fetchJson<Parameters<typeof parseBcraSeries>[0] & { metadata: { resultset: { count: number } } }>(
+        `https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/${id}?desde=${from}&hasta=${to}&limit=${BCRA_PAGE}&offset=${offset}`,
+      );
+      points.push(...parseBcraSeries(raw));
+      if (offset + BCRA_PAGE >= raw.metadata.resultset.count) break;
+    }
+    return points.sort((a, b) => a.date.localeCompare(b.date));
+  });
 }
+
+/** A BCRA series from `from` (YYYY-MM-DD) to today, paging through the whole range. */
+export const getBcraHistory = async (id: number, from: string) => unwrap(await cachedBcraHistory(id, from));
 
 /** BCRA "Principales Variables" ids used by the dashboard. */
 export const BCRA_VARIABLES = {
@@ -81,24 +127,55 @@ export const BCRA_VARIABLES = {
   bandUpper: 1188,
 } as const;
 
-export async function getBcraSeries(id: number, days: number, cache: keyof typeof CACHE): Promise<Point[]> {
+async function cachedBcraSeries(id: number, days: number, cache: keyof typeof CACHE): Promise<Outcome<Point[]>> {
   "use cache";
-  cacheLife(CACHE[cache]);
-  const to = new Date();
-  const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  const raw = await fetchJson<Parameters<typeof parseBcraSeries>[0]>(
-    `https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/${id}?desde=${iso(from)}&hasta=${iso(to)}`,
-  );
-  return parseBcraSeries(raw);
+  return attempt(CACHE[cache], async () => {
+    const to = new Date();
+    const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    const raw = await fetchJson<Parameters<typeof parseBcraSeries>[0]>(
+      `https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/${id}?desde=${iso(from)}&hasta=${iso(to)}`,
+    );
+    return parseBcraSeries(raw);
+  });
 }
 
-export async function getBymaIndex(symbol: string): Promise<IndexData> {
+export const getBcraSeries = async (id: number, days: number, cache: keyof typeof CACHE) =>
+  unwrap(await cachedBcraSeries(id, days, cache));
+
+/** INDEC series on the datos.gob.ar series API. */
+export const INDEC_SERIES = {
+  /** EMAE (monthly activity, the usual monthly proxy for GDP), base 2004, original series. */
+  emae: "143.3_NO_PR_2004_A_21",
+  /** EMAE, seasonally adjusted. */
+  emaeSeasonallyAdjusted: "143.3_NO_PR_2004_A_31",
+} as const;
+
+async function cachedIndecMonthlySeries(ids: string[]): Promise<Outcome<Point[][]>> {
   "use cache";
-  cacheLife(CACHE.live);
-  const raw = await fetchJson<Parameters<typeof parseBymaIndex>[0]>(
-    "https://open.bymadata.com.ar/vanoms-be-core/rest/api/bymadata/free/index-price",
-    { method: "POST", body: {} },
-  );
-  return parseBymaIndex(raw, symbol);
+  return attempt(CACHE.daily, async () => {
+    const raw = await fetchJson<Parameters<typeof parseDatosSeries>[0]>(
+      `https://apis.datos.gob.ar/series/api/series/?ids=${ids.join(",")}&format=json&limit=5000`,
+    );
+    return parseDatosSeries(raw, ids.length).map((series) => series.map((p) => ({ ...p, date: monthEnd(p.date) })));
+  });
 }
+
+/**
+ * Full history of monthly INDEC series from datos.gob.ar, one per id and in the
+ * same order, dated at the end of each month like the other monthly sources.
+ */
+export const getIndecMonthlySeries = async (ids: string[]) => unwrap(await cachedIndecMonthlySeries(ids));
+
+async function cachedBymaIndex(symbol: string): Promise<Outcome<IndexData>> {
+  "use cache";
+  return attempt(CACHE.live, async () => {
+    const raw = await fetchJson<Parameters<typeof parseBymaIndex>[0]>(
+      "https://open.bymadata.com.ar/vanoms-be-core/rest/api/bymadata/free/index-price",
+      { method: "POST", body: {} },
+    );
+    return parseBymaIndex(raw, symbol);
+  });
+}
+
+export const getBymaIndex = async (symbol: string) => unwrap(await cachedBymaIndex(symbol));

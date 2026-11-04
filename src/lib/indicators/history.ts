@@ -105,3 +105,13 @@ export function periodChange(points: Point[], kind: "percent" | "points"): numbe
   if (kind === "points") return last - first;
   return first === 0 ? null : (last / first - 1) * 100;
 }
+
+/**
+ * Last day of the month of a plain date. Monthly series are dated at the start
+ * of the month by some sources and at the end by others; using the end for all
+ * keeps them aligned with each other and with marks that start mid-month.
+ */
+export function monthEnd(date: string): string {
+  const [year, month] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+}

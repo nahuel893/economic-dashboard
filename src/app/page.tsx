@@ -31,13 +31,14 @@ export default async function Home() {
         <DollarSection />
         <PressureSection />
         <MacroGroupSection snapshot={macro} id="inflation" />
+        <MacroGroupSection snapshot={macro} id="activity" />
         <MacroGroupSection snapshot={macro} id="money" />
         <MacroGroupSection snapshot={macro} id="rates" />
         <MarketsSection />
         <MacroGroupSection snapshot={macro} id="indexes" />
 
         <footer className="text-xs text-muted-foreground">
-          Fuentes: dolarapi.com, ArgentinaDatos, BCRA (Estadísticas v4) y datos abiertos de BYMA. Los datos de mercado
+          Fuentes: dolarapi.com, ArgentinaDatos, BCRA (Estadísticas v4), INDEC (vía datos.gob.ar) y datos abiertos de BYMA. Los datos de mercado
           pueden tener demora. No constituye asesoramiento financiero.
         </footer>
       </main>

@@ -59,3 +59,18 @@ export function parseBymaIndex(raw: { data: BymaIndex[] }, symbol: string): Inde
     low: index.minValue,
   };
 }
+
+/** Table returned by the series API of datos.gob.ar: a date column, then one column per requested id. */
+type DatosSeriesResponse = { data: (string | number | null)[][] };
+
+/** One sorted series per requested id, in request order; empty cells are skipped. */
+export function parseDatosSeries(raw: DatosSeriesResponse, count: number): Point[][] {
+  return Array.from({ length: count }, (_, column) => {
+    const points = raw.data.flatMap((row) => {
+      const value = row[column + 1];
+      return typeof value === "number" ? [{ date: String(row[0]), value }] : [];
+    });
+    if (!points.length) throw new Error(`datos.gob.ar series ${column + 1} returned no data`);
+    return points.sort((a, b) => a.date.localeCompare(b.date));
+  });
+}

@@ -7,7 +7,13 @@ import { MARK_LAYERS, spansOnAxis, type MarkLayerKey } from "@/lib/indicators/ma
 import type { Point } from "@/lib/indicators/types";
 import { HistoryChart, type AxisLabels, type ChartMark, type HistorySummary } from "./history-chart";
 
-const GROUP_TONES: Record<HistoryGroupId, Tone> = { dollars: "dollars", inflation: "inflation", markets: "risk" };
+const GROUP_TONES: Record<HistoryGroupId, Tone> = {
+  dollars: "dollars",
+  inflation: "inflation",
+  // Same amber as on the main dashboard; see the note on its section tones.
+  activity: "pressure",
+  markets: "risk",
+};
 
 /** Variables that read better in the tone of their topic on the main dashboard. */
 const VARIABLE_TONES: Partial<Record<string, Tone>> = { gap: "pressure", reserves: "money", badlar: "rates" };

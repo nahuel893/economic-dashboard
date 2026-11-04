@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bandPosition,
+  changeOverMonths,
   gapHistory,
   lastN,
   percentGap,
@@ -130,5 +131,29 @@ describe("lastN", () => {
       { date: "2026-10-29", value: 2 },
       { date: "2026-10-30", value: 3 },
     ]);
+  });
+});
+
+describe("changeOverMonths", () => {
+  const points = [
+    { date: "2025-01-01", value: 100 },
+    { date: "2025-02-01", value: 102 },
+    { date: "2026-01-01", value: 105 },
+    { date: "2026-02-01", value: 99.96 },
+  ];
+
+  it("is the percent change against the same month one year earlier", () => {
+    const yoy = changeOverMonths(points, 12);
+    expect(yoy.map((p) => p.date)).toEqual(["2026-01-01", "2026-02-01"]);
+    expect(yoy[0].value).toBeCloseTo(5);
+    expect(yoy[1].value).toBeCloseTo(-2);
+  });
+
+  it("only compares with the month exactly that far back", () => {
+    const mom = changeOverMonths(points, 1);
+    expect(mom).toHaveLength(2);
+    expect(mom[0]).toMatchObject({ date: "2025-02-01" });
+    expect(mom[0].value).toBeCloseTo(2);
+    expect(mom[1].value).toBeCloseTo(-4.8);
   });
 });

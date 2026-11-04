@@ -33,7 +33,14 @@ export function ColumnChart({ points, unit, label }: ColumnChartProps) {
       aria-label={`${label}: ${points.map((p) => `${formatMonth(p.date)} ${formatValue(p.value, unit)}`).join(", ")}`}
     >
       <BarChart data={points} margin={{ top: 18, right: 0, bottom: 0, left: 0 }} barCategoryGap={2}>
-        <YAxis hide domain={[0, "dataMax"]} />
+        {/*
+          Always includes zero, so negative months (activity can fall) grow
+          downwards, with extra room below them for their value labels.
+        */}
+        <YAxis
+          hide
+          domain={([min, max]: readonly number[]) => [min < 0 ? min - (Math.max(0, max) - min) * 0.2 : 0, Math.max(0, max)]}
+        />
         <XAxis
           dataKey="date"
           tickLine={false}
@@ -66,7 +73,8 @@ export function ColumnChart({ points, unit, label }: ColumnChartProps) {
             offset={4}
             className="fill-foreground"
             fontSize={10}
-            formatter={(value) => formatNumber(Number(value), 1)}
+            // Rounded first, so a tiny negative value reads "0,0" instead of "-0,0".
+            formatter={(value) => formatNumber(Math.round(Number(value) * 10) / 10 + 0, 1)}
           />
         </Bar>
       </BarChart>

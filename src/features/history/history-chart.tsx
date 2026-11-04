@@ -70,7 +70,7 @@ function formatTick(date: string, axis: AxisLabels): string {
 
 /** Shorter values for the axis: no cents unless the prices are small, and no currency on millions (the description says it). */
 function formatAxisValue(value: number, unit: Unit): string {
-  if (unit === "usdMillions") return formatNumber(value);
+  if (unit === "usdMillions" || unit === "index" || unit === "index2") return formatNumber(value);
   const small = value !== 0 && Math.abs(value) < 10;
   if (unit === "ars2") return formatArs(value, small ? 1 : 0);
   if (unit === "percent") return `${formatNumber(value, small ? 1 : 0)} %`;

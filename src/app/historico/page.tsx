@@ -54,7 +54,7 @@ export default function HistoryPage({ searchParams }: PageProps<"/historico">) {
 
       <footer className="flex flex-col gap-1 text-xs text-muted-foreground">
         <p>
-          Fuentes: ArgentinaDatos (dólar, inflación del INDEC y riesgo país) y BCRA (reservas y BADLAR). Los valores en
+          Fuentes: ArgentinaDatos (dólar, inflación del INDEC y riesgo país), INDEC vía datos.gob.ar (actividad) y BCRA (reservas y BADLAR). Los valores en
           pesos son nominales, sin ajustar por inflación.
         </p>
         <p>

@@ -159,6 +159,10 @@ export function macroSpec(group: MacroGroup): CompareSpec | null {
           "La tasa real no se incluye porque no tiene histórico propio.",
         ],
       };
+    case "activity":
+      // Both cards come from the same EMAE, one as a yearly and one as a monthly
+      // change: comparing them would only show that relationship.
+      return null;
     case "indexes":
       // UVA (~$2.000), CER (~860) and ICL (~37) span two orders of magnitude: base 100.
       return {

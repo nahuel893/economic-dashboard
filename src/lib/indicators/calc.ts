@@ -1,4 +1,5 @@
 import type { Point } from "./types";
+import { shiftMonths } from "./history";
 
 /** How much higher `a` is than `b`, in percent. */
 export function percentGap(a: number, b: number): number {
@@ -63,4 +64,17 @@ export function toSeries(points: Point[], n: number): Series {
 /** The most recent `n` points, in ascending date order. */
 export function lastN(points: Point[], n: number): Point[] {
   return [...points].sort((a, b) => a.date.localeCompare(b.date)).slice(-n);
+}
+
+/**
+ * Percent change of each monthly point against the one `lag` months earlier
+ * (12 for year-on-year, 1 for month-on-month). Points without that earlier
+ * month are skipped, so a gap in the data never pairs the wrong months.
+ */
+export function changeOverMonths(points: Point[], lag: number): Point[] {
+  const byMonth = new Map(points.map((p) => [p.date.slice(0, 7), p.value]));
+  return points.flatMap((p) => {
+    const before = byMonth.get(shiftMonths(p.date.slice(0, 7), -lag));
+    return before ? [{ date: p.date, value: (p.value / before - 1) * 100 }] : [];
+  });
 }

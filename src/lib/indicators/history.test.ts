@@ -5,6 +5,7 @@ import {
   HISTORY_FLOOR,
   inRange,
   logTicks,
+  monthEnd,
   periodChange,
   periodTicks,
   resolveRange,
@@ -109,5 +110,13 @@ describe("periodChange", () => {
     expect(periodChange(points, "percent")).toBeCloseTo(20);
     expect(periodChange(points, "points")).toBeCloseTo(10);
     expect(periodChange(points.slice(0, 1), "percent")).toBeNull();
+  });
+});
+
+describe("monthEnd", () => {
+  it("moves a monthly date to the last day of its month, leap years included", () => {
+    expect(monthEnd("2023-12-01")).toBe("2023-12-31");
+    expect(monthEnd("2024-02-01")).toBe("2024-02-29");
+    expect(monthEnd("2026-06-30")).toBe("2026-06-30");
   });
 });

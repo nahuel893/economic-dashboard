@@ -39,6 +39,7 @@ No environment variables are needed: every source is a free, public API.
 | Dólar | Oficial, blue, MEP, CCL |
 | Presión cambiaria | CCL vs. oficial gap, wholesale rate (A3500) inside the exchange-rate band, crypto dollar (USDT) |
 | Inflación | Monthly, year-on-year, expected in 12 months (REM median) |
+| Actividad económica | GDP month by month (INDEC's EMAE): year-on-year and seasonally adjusted monthly change |
 | Dinero y crédito | Reserves, monetary base, private M2, deposits, private-sector loans |
 | Tasas | 30-day term deposit, TAMAR, BADLAR, personal loans, overdrafts, real rate |
 | Mercados | Country risk, Merval in pesos and in CCL dollars |
@@ -50,7 +51,7 @@ The hot indicators refresh every 2 minutes in the browser. Each section ends wit
 
 ![The "Histórico" tab: one line chart per variable with a month and year range filter](docs/history.png)
 
-One line chart per variable (dollars, gap, inflation, country risk, reserves, BADLAR) since 2003, with presets (1, 3, 5, 10 years, all) or any month-to-month range. The range lives in the URL, so every view can be shared.
+One line chart per variable (dollars, gap, inflation, economic activity, country risk, reserves, BADLAR) since 2003, with presets (1, 3, 5, 10 years, all) or any month-to-month range. The range lives in the URL, so every view can be shared.
 
 - Long ranges show weekly or monthly closes; min, max and change are computed on every point.
 - Price-level series can switch to a log axis per chart; it is off by default.
@@ -63,10 +64,11 @@ One line chart per variable (dollars, gap, inflation, country risk, reserves, BA
 |--------|----------|
 | [dolarapi.com](https://dolarapi.com) | Live dollar quotes |
 | [ArgentinaDatos](https://argentinadatos.com) | Dollar history, inflation, country risk |
+| [INDEC via datos.gob.ar](https://datos.gob.ar/series) | Economic activity (EMAE) |
 | [BCRA, Estadísticas v4](https://www.bcra.gob.ar/en/central-bank-api-catalog/) | Reserves, money, rates, REM, indexes, exchange-rate band |
 | [BYMA open data](https://open.bymadata.com.ar) | Merval |
 
-If a source fails, only its tiles show "No disponible"; the rest of the page still renders. Market data may be delayed. Nothing here is financial advice.
+If a source fails, only its tiles show "No disponible"; the rest of the page still renders, and the build never fails because of it. Cached requests return failures as values (`attempt`/`unwrap` in `src/lib/sources/clients.ts`), because a cached function that throws aborts the prerender, and a failure is retried after a minute. Market data may be delayed. Nothing here is financial advice.
 
 ## How it works
 

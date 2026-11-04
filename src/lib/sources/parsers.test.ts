@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseBcraSeries, parseBymaIndex, parseDailyQuotes, parseDolarApi } from "./parsers";
+import { parseBcraSeries, parseBymaIndex, parseDailyQuotes, parseDatosSeries, parseDolarApi } from "./parsers";
 
 describe("parseDolarApi", () => {
   it("indexes live quotes by exchange house", () => {
@@ -70,5 +70,32 @@ describe("parseBymaIndex", () => {
 
   it("throws when the index is missing", () => {
     expect(() => parseBymaIndex(raw, "NOPE")).toThrow();
+  });
+});
+
+describe("parseDatosSeries", () => {
+  it("splits the table into one series per requested id, skipping empty cells", () => {
+    const raw = {
+      data: [
+        ["2026-05-01", 166.2, 153.7],
+        ["2026-06-01", null, 154.1],
+        ["2026-07-01", 151.5, 149.6],
+      ],
+    };
+    expect(parseDatosSeries(raw, 2)).toEqual([
+      [
+        { date: "2026-05-01", value: 166.2 },
+        { date: "2026-07-01", value: 151.5 },
+      ],
+      [
+        { date: "2026-05-01", value: 153.7 },
+        { date: "2026-06-01", value: 154.1 },
+        { date: "2026-07-01", value: 149.6 },
+      ],
+    ]);
+  });
+
+  it("fails when a series has no data", () => {
+    expect(() => parseDatosSeries({ data: [["2026-05-01", null]] }, 1)).toThrow();
   });
 });
