@@ -17,18 +17,6 @@ export function labelIndices(dates: string[], period: "year" | "month", max: num
   return [0, ...starts.filter((index) => index > 0)];
 }
 
-/** Round tick values (1, 2 or 5 times a power of ten apart) within [min, max]. */
-export function linearTicks(min: number, max: number, count: number): number[] {
-  if (!(max > min)) return [min];
-  const rough = (max - min) / count;
-  const magnitude = 10 ** Math.floor(Math.log10(rough));
-  const normalized = rough / magnitude;
-  const step = (normalized < 1.5 ? 1 : normalized < 3 ? 2 : normalized < 7 ? 5 : 10) * magnitude;
-  const ticks: number[] = [];
-  for (let k = Math.ceil(min / step); k * step <= max; k++) ticks.push(Number((k * step).toPrecision(12)) + 0);
-  return ticks;
-}
-
 /** Maps a value to a pixel row, `bottom` for `min` and `top` for `max`. */
 export function makeYScale(min: number, max: number, bottom: number, top: number, log: boolean) {
   const transform = log ? Math.log10 : (value: number) => value;

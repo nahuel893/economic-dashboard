@@ -85,6 +85,18 @@ export function logTicks(min: number, max: number): number[] {
   return ticks;
 }
 
+/** Round tick values (1, 2 or 5 times a power of ten apart) within [min, max]. */
+export function linearTicks(min: number, max: number, count: number): number[] {
+  if (!(max > min)) return [min];
+  const rough = (max - min) / count;
+  const magnitude = 10 ** Math.floor(Math.log10(rough));
+  const normalized = rough / magnitude;
+  const step = (normalized < 1.5 ? 1 : normalized < 3 ? 2 : normalized < 7 ? 5 : 10) * magnitude;
+  const ticks: number[] = [];
+  for (let k = Math.ceil(min / step); k * step <= max; k++) ticks.push(Number((k * step).toPrecision(12)) + 0);
+  return ticks;
+}
+
 /**
  * Axis ticks at the first point of each year or month (the first period is
  * skipped: the window may start mid-way through it), keeping every n-th one so

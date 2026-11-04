@@ -90,3 +90,19 @@ export function formatDate(isoDate: string): string {
     timeZone: isPlainDate ? "UTC" : "America/Argentina/Buenos_Aires",
   }).format(new Date(isoDate));
 }
+
+/** Shorter values for chart axes: no cents unless the values are small, and no currency on millions (the description says it). */
+export function formatAxisValue(value: number, unit: Unit): string {
+  if (unit === "usdMillions" || unit === "index" || unit === "index2") return formatNumber(value);
+  const small = value !== 0 && Math.abs(value) < 10;
+  if (unit === "ars2") return formatArs(value, small ? 1 : 0);
+  if (unit === "percent") return `${formatNumber(value, small ? 1 : 0)} %`;
+  return formatValue(value, unit);
+}
+
+/** A change over a period: relative in percent, or absolute in percentage points for rates. */
+export function formatChange(value: number, kind: "percent" | "points"): string {
+  return kind === "percent"
+    ? formatSignedPercent(value, 1)
+    : `${value > 0 ? "+" : value < 0 ? "-" : ""}${formatNumber(Math.abs(value), 1)} pp`;
+}

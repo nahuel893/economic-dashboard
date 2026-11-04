@@ -9,11 +9,10 @@ const formatPoints = (value: number, decimals: number) =>
   `${value > 0 ? "+" : value < 0 ? "-" : ""}${formatNumber(Math.abs(value), decimals)} pp`;
 import { changeSinceStart, correlate, mergeByDate, rebase100, type Correlation } from "@/lib/indicators/stats";
 import type { Point } from "@/lib/indicators/types";
+import { LINE_COLORS } from "@/components/dashboard/chart-colors";
 import { cn } from "@/lib/utils";
 import type { CompareSpec, CompareVariable } from "./specs";
 
-/** Categorical line colors in fixed order, validated against the card surface (#16264a). */
-const LINE_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181"];
 
 function formatAxisDate(date: string, frequency: CompareSpec["frequency"]): string {
   return frequency === "monthly" ? `${formatMonthShort(date).slice(0, 3)} ${date.slice(2, 4)}` : `${date.slice(8, 10)}/${date.slice(5, 7)}`;

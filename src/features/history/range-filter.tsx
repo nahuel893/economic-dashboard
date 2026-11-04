@@ -17,11 +17,11 @@ const PRESETS = [
   { label: "Todo", years: null },
 ] as const;
 
-function href(range: MonthRange, marks: MarkLayerKey[]) {
+function href(path: string, range: MonthRange, marks: MarkLayerKey[]) {
   const params = new URLSearchParams({ desde: range.from, hasta: range.to });
   const marcas = serializeMarks(marks);
   if (marcas) params.set("marcas", marcas);
-  return `/historico?${params.toString()}`;
+  return `${path}?${params.toString()}`;
 }
 
 const chipClass =
@@ -30,9 +30,17 @@ const chipClass =
 const selectClass =
   "h-9 rounded-md border border-input bg-card px-2 text-sm focus-visible:outline-2 focus-visible:outline-ring";
 
-type RangeFilterProps = { range: MonthRange; marks: MarkLayerKey[]; latest: string };
+type RangeFilterProps = {
+  range: MonthRange;
+  latest: string;
+  /** Page the filter navigates on. */
+  path?: string;
+  /** Active mark layers; without them the page has no marks and their toggles are hidden. */
+  marks?: MarkLayerKey[];
+};
 
-export function RangeFilter({ range, marks, latest }: RangeFilterProps) {
+export function RangeFilter({ range, latest, path = "/historico", marks: markLayers }: RangeFilterProps) {
+  const marks = markLayers ?? [];
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -40,7 +48,7 @@ export function RangeFilter({ range, marks, latest }: RangeFilterProps) {
   const years = Array.from({ length: Number(latest.slice(0, 4)) - firstYear + 1 }, (_, i) => firstYear + i);
 
   const go = (next: MonthRange, nextMarks = marks) =>
-    startTransition(() => router.push(href(next, nextMarks), { scroll: false }));
+    startTransition(() => router.push(href(path, next, nextMarks), { scroll: false }));
   const toggleMark = (key: MarkLayerKey) =>
     go(range, marks.includes(key) ? marks.filter((k) => k !== key) : [...marks, key]);
   const update = (end: "from" | "to", part: "year" | "month", value: string) => {
@@ -103,7 +111,7 @@ export function RangeFilter({ range, marks, latest }: RangeFilterProps) {
             return (
               <Link
                 key={preset.label}
-                href={href(target, marks)}
+                href={href(path, target, marks)}
                 scroll={false}
                 aria-current={current ? "true" : undefined}
                 className={cn(chipClass, current && "bg-primary text-primary-foreground ring-primary hover:bg-primary")}
@@ -113,29 +121,31 @@ export function RangeFilter({ range, marks, latest }: RangeFilterProps) {
             );
           })}
         </nav>
-        <div role="group" aria-label="Marcas en los gráficos" className="flex flex-wrap items-center gap-1.5">
-          <span className="text-sm text-muted-foreground" aria-hidden>
-            Marcas
-          </span>
-          {MARK_LAYERS.map((layer) => {
-            const on = marks.includes(layer.key);
-            return (
-              <button
-                key={layer.key}
-                type="button"
-                aria-pressed={on}
-                onClick={() => toggleMark(layer.key)}
-                className={cn(chipClass, "flex items-center gap-1.5", on && "bg-muted ring-foreground/40")}
-              >
-                <span
-                  aria-hidden
-                  className={cn("size-2.5 rounded-sm ring-1 ring-foreground/40", on && "bg-foreground ring-foreground")}
-                />
-                {layer.label}
-              </button>
-            );
-          })}
-        </div>
+        {markLayers ? (
+          <div role="group" aria-label="Marcas en los gráficos" className="flex flex-wrap items-center gap-1.5">
+            <span className="text-sm text-muted-foreground" aria-hidden>
+              Marcas
+            </span>
+            {MARK_LAYERS.map((layer) => {
+              const on = marks.includes(layer.key);
+              return (
+                <button
+                  key={layer.key}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => toggleMark(layer.key)}
+                  className={cn(chipClass, "flex items-center gap-1.5", on && "bg-muted ring-foreground/40")}
+                >
+                  <span
+                    aria-hidden
+                    className={cn("size-2.5 rounded-sm ring-1 ring-foreground/40", on && "bg-foreground ring-foreground")}
+                  />
+                  {layer.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         {endControls("from", "Desde")}

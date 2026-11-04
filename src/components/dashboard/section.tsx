@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { cn } from "@/lib/utils";
-
-export type Tone = "dollars" | "pressure" | "risk" | "money" | "inflation" | "rates" | "indexes";
+import { toneVar, type Tone } from "./tones";
 
 type SectionProps = {
   id: string;
@@ -22,7 +21,7 @@ export function Section({ id, title, description, tone, className, aside, childr
   return (
     <section
       aria-labelledby={`${id}-heading`}
-      style={{ "--tone": `var(--tone-${tone})` } as CSSProperties}
+      style={{ "--tone": toneVar(tone) } as CSSProperties}
       className={cn("flex min-w-0 flex-col gap-4 border-l-4 border-tone pl-4 sm:pl-6", className)}
     >
       <div className="flex flex-col gap-0.5">

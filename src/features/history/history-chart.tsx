@@ -4,7 +4,7 @@ import { useId, useRef, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { SourceCitation } from "@/components/dashboard/source-citation";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
-import { formatArs, formatDate, formatMonth, formatMonthShort, formatNumber, formatSignedPercent, formatValue, type Unit } from "@/lib/format";
+import { formatAxisValue, formatChange, formatDate, formatMonth, formatMonthShort, formatValue, type Unit } from "@/lib/format";
 import { logTicks, periodTicks, type Granularity, type MonthRange } from "@/lib/indicators/history";
 import { labelFits, spanAt, type AxisSpan, type MarkLayerKey } from "@/lib/indicators/marks";
 import { videoFileName } from "@/lib/indicators/series-animation";
@@ -68,20 +68,6 @@ function formatTick(date: string, axis: AxisLabels): string {
   if (axis === "month") return `${formatMonthShort(date).slice(0, 3)} ${date.slice(2, 4)}`;
   return `${date.slice(8, 10)}/${date.slice(5, 7)}`;
 }
-
-/** Shorter values for the axis: no cents unless the prices are small, and no currency on millions (the description says it). */
-function formatAxisValue(value: number, unit: Unit): string {
-  if (unit === "usdMillions" || unit === "index" || unit === "index2") return formatNumber(value);
-  const small = value !== 0 && Math.abs(value) < 10;
-  if (unit === "ars2") return formatArs(value, small ? 1 : 0);
-  if (unit === "percent") return `${formatNumber(value, small ? 1 : 0)} %`;
-  return formatValue(value, unit);
-}
-
-const formatChange = (value: number, kind: HistoryChartProps["change"]) =>
-  kind === "percent"
-    ? formatSignedPercent(value, 1)
-    : `${value > 0 ? "+" : value < 0 ? "-" : ""}${formatNumber(Math.abs(value), 1)} pp`;
 
 const formatPointDate = (date: string, frequency: HistoryChartProps["frequency"]) =>
   frequency === "monthly" ? formatMonth(date) : formatDate(date);

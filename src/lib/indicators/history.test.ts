@@ -4,6 +4,7 @@ import {
   granularityFor,
   HISTORY_FLOOR,
   inRange,
+  linearTicks,
   logTicks,
   monthEnd,
   periodChange,
@@ -118,5 +119,13 @@ describe("monthEnd", () => {
     expect(monthEnd("2023-12-01")).toBe("2023-12-31");
     expect(monthEnd("2024-02-01")).toBe("2024-02-29");
     expect(monthEnd("2026-06-30")).toBe("2026-06-30");
+  });
+});
+
+describe("linearTicks", () => {
+  it("returns round steps covering the domain", () => {
+    expect(linearTicks(0, 1000, 5)).toEqual([0, 200, 400, 600, 800, 1000]);
+    expect(linearTicks(195, 1575, 5)).toEqual([200, 400, 600, 800, 1000, 1200, 1400]);
+    expect(linearTicks(-0.4, 25.5, 5)).toEqual([0, 5, 10, 15, 20, 25]);
   });
 });

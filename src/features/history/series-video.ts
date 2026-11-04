@@ -6,7 +6,8 @@
  */
 import { logTicks, periodTicks } from "@/lib/indicators/history";
 import { labelFits } from "@/lib/indicators/marks";
-import { frameAt, labelIndices, linearTicks, makeYScale, rectsOverlap, type Rect } from "@/lib/indicators/series-animation";
+import { linearTicks } from "@/lib/indicators/history";
+import { frameAt, labelIndices, makeYScale, rectsOverlap, type Rect } from "@/lib/indicators/series-animation";
 import type { Point } from "@/lib/indicators/types";
 import type { AxisLabels, ChartMark } from "./history-chart";
 

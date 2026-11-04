@@ -1,14 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  formatArs,
-  formatArsMillions,
-  formatMonth,
-  formatMonthShort,
-  formatNumber,
-  formatSignedPercent,
-  formatUsdMillions,
-  formatValue,
-} from "./format";
+import { formatArs, formatArsMillions, formatAxisValue, formatChange, formatMonth, formatMonthShort, formatNumber, formatSignedPercent, formatUsdMillions, formatValue } from "./format";
 
 // Intl may use a narrow no-break space between "$" and the amount.
 const normalize = (s: string) => s.replace(/\s/g, " ");
@@ -75,5 +66,21 @@ describe("formatSignedPercent", () => {
 
   it("keeps the minus sign for negative values", () => {
     expect(normalize(formatSignedPercent(-2.59))).toBe("-2,6 %");
+  });
+});
+
+describe("formatAxisValue", () => {
+  it("drops the currency on millions and indexes, and cents on large prices", () => {
+    expect(formatAxisValue(50913, "usdMillions")).toBe(formatNumber(50913));
+    expect(formatAxisValue(1565.4, "ars2")).toBe(formatArs(1565.4, 0));
+    expect(formatAxisValue(3.25, "percent")).toBe(`${formatNumber(3.25, 1)} %`);
+  });
+});
+
+describe("formatChange", () => {
+  it("shows levels in percent and rates in signed percentage points", () => {
+    expect(formatChange(21, "percent")).toBe(formatSignedPercent(21, 1));
+    expect(formatChange(-5, "points")).toBe(`-${formatNumber(5, 1)} pp`);
+    expect(formatChange(0, "points")).toBe(`${formatNumber(0, 1)} pp`);
   });
 });

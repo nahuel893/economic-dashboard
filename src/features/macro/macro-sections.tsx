@@ -1,5 +1,6 @@
 import { ColumnChart } from "@/components/dashboard/column-chart";
-import { Section, type Tone } from "@/components/dashboard/section";
+import { Section } from "@/components/dashboard/section";
+import type { Tone } from "@/components/dashboard/tones";
 import { ComparisonPanel } from "@/features/compare/comparison-panel";
 import { macroSpec } from "@/features/compare/specs";
 import { Sparkline } from "@/components/dashboard/sparkline";
