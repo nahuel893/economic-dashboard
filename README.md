@@ -68,6 +68,8 @@ One line chart per variable (dollars, gap, inflation, economic activity, country
 | [BCRA, Estadísticas v4](https://www.bcra.gob.ar/en/central-bank-api-catalog/) | Reserves, money, rates, REM, indexes, exchange-rate band |
 | [BYMA open data](https://open.bymadata.com.ar) | Merval |
 
+Every card and chart cites its source by name, linked to the full references at the bottom of the page: endpoints, BCRA variable numbers, INDEC series ids and how often each one is queried (`src/lib/indicators/references.ts`).
+
 If a source fails, only its tiles show "No disponible"; the rest of the page still renders, and the build never fails because of it. Cached requests return failures as values (`attempt`/`unwrap` in `src/lib/sources/clients.ts`), because a cached function that throws aborts the prerender, and a failure is retried after a minute. Market data may be delayed. Nothing here is financial advice.
 
 ## How it works

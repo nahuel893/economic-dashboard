@@ -149,7 +149,7 @@ export function MervalTile({ indicator }: { indicator: Indicator<MervalData> }) 
       secondary={valueUsd === null ? undefined : `${formatUsd(valueUsd, 2)} al CCL`}
       delta={{ value: changePct, text: formatSignedPercent(changePct, 2), label: "hoy" }}
       badge="Con demora"
-      source={`${indicator.source}, sin histórico intradiario gratuito`}
+      source={indicator.source}
       asOf={formatDate(date)}
     >
       <RangeMeter

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { SourceReferences } from "@/components/dashboard/source-references";
 import { HistorySections } from "@/features/history/history-sections";
 import { RangeFilter } from "@/features/history/range-filter";
 import { HISTORY_FLOOR, resolveRange } from "@/lib/indicators/history";
 import { getHistorySnapshot } from "@/lib/indicators/history-data";
 import { parseMarks } from "@/lib/indicators/marks";
+import { historyReferences } from "@/lib/indicators/references";
 
 export const metadata: Metadata = {
   title: "Histórico | Tablero económico de Argentina",
@@ -52,17 +54,14 @@ export default function HistoryPage({ searchParams }: PageProps<"/historico">) {
         <HistoryContent searchParams={searchParams} />
       </Suspense>
 
-      <footer className="flex flex-col gap-1 text-xs text-muted-foreground">
-        <p>
-          Fuentes: ArgentinaDatos (dólar, inflación del INDEC y riesgo país), INDEC vía datos.gob.ar (actividad) y BCRA (reservas y BADLAR). Los valores en
-          pesos son nominales, sin ajustar por inflación.
-        </p>
+      <SourceReferences references={historyReferences()}>
+        <p>Los valores en pesos son nominales, sin ajustar por inflación.</p>
         <p>
           Con rangos largos se muestra el cierre de cada semana o de cada mes. Mínimo, máximo y variación se calculan con
           todos los datos del período. Las marcas de presidencias empiezan el día de cada asunción. La escala logarítmica, apagada por defecto, se puede activar en cada gráfico que la admite:
           así un mismo ritmo de suba se ve con la misma pendiente.
         </p>
-      </footer>
+      </SourceReferences>
     </main>
   );
 }

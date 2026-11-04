@@ -2,6 +2,7 @@ import { cacheLife } from "next/cache";
 import type { Unit } from "@/lib/format";
 import {
   CACHE,
+  BCRA_VARIABLES,
   getBcraHistory,
   getCountryRiskHistory,
   getDollarHistory,
@@ -67,8 +68,8 @@ export async function getHistorySnapshot(): Promise<HistorySnapshot> {
     // Computed on the whole series, so the first year after the floor has its comparison month.
     settle(SOURCES.indec, async () => fromFloor(changeOverMonths((await emae)[0], 12))),
     settle(SOURCES.argentinaDatos, () => getCountryRiskHistory().then(fromFloor)),
-    settle(SOURCES.bcra, () => getBcraHistory(1, BCRA_FROM)),
-    settle(SOURCES.bcra, () => getBcraHistory(7, BCRA_FROM)),
+    settle(SOURCES.bcra, () => getBcraHistory(BCRA_VARIABLES.reserves, BCRA_FROM)),
+    settle(SOURCES.bcra, () => getBcraHistory(BCRA_VARIABLES.badlar, BCRA_FROM)),
   ]);
 
   const level = (key: string, label: string, description: string, indicator: Indicator<Point[]>): HistoryVariable => ({

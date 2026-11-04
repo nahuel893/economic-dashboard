@@ -1,6 +1,7 @@
 import { cacheLife } from "next/cache";
 import { monthEnd } from "@/lib/indicators/history";
 import type { IndexData, Point, Quote } from "@/lib/indicators/types";
+import { CITATION_SEPARATOR, SOURCE_NAMES } from "./citations";
 import { fetchJson } from "./http";
 import { parseBcraSeries, parseBymaIndex, parseDailyQuotes, parseDatosSeries, parseDolarApi } from "./parsers";
 
@@ -44,13 +45,14 @@ function unwrap<T>(outcome: Outcome<T>): T {
   return outcome.value;
 }
 
+/** Source cited on each indicator; the full references live in `@/lib/indicators/references`. */
 export const SOURCES = {
-  dolarApi: "dolarapi.com",
-  argentinaDatos: "ArgentinaDatos",
-  bcra: "BCRA",
-  byma: "BYMA",
-  dollars: "dolarapi.com · ArgentinaDatos",
-  indec: "INDEC vía datos.gob.ar",
+  dolarApi: SOURCE_NAMES.dolarapi,
+  argentinaDatos: SOURCE_NAMES.argentinaDatos,
+  bcra: SOURCE_NAMES.bcra,
+  byma: SOURCE_NAMES.byma,
+  dollars: [SOURCE_NAMES.dolarapi, SOURCE_NAMES.argentinaDatos].join(CITATION_SEPARATOR),
+  indec: SOURCE_NAMES.indec,
 } as const;
 
 async function cachedLiveDollarQuotes(): Promise<Outcome<Record<string, Quote>>> {
@@ -120,8 +122,10 @@ async function cachedBcraHistory(id: number, from: string): Promise<Outcome<Poin
 /** A BCRA series from `from` (YYYY-MM-DD) to today, paging through the whole range. */
 export const getBcraHistory = async (id: number, from: string) => unwrap(await cachedBcraHistory(id, from));
 
-/** BCRA "Principales Variables" ids used by the dashboard. */
+/** BCRA "Principales Variables" ids used outside the macro groups. */
 export const BCRA_VARIABLES = {
+  reserves: 1,
+  badlar: 7,
   wholesaleDollar: 5,
   bandLower: 1187,
   bandUpper: 1188,

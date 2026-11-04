@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
+import { SourceCitation } from "@/components/dashboard/source-citation";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { formatArs, formatDate, formatMonth, formatMonthShort, formatNumber, formatSignedPercent, formatValue, type Unit } from "@/lib/format";
 import { logTicks, periodTicks, type Granularity, type MonthRange } from "@/lib/indicators/history";
@@ -260,7 +261,7 @@ export function HistoryChart(props: HistoryChartProps) {
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
         <span>
-          Fuente: {source}
+          Fuente: <SourceCitation source={source} />
           {closeLabel ? `. ${granularity === "weekly" ? "Cierres semanales" : "Cierres mensuales"}.` : "."}
         </span>
         <div className="flex flex-wrap items-center gap-3">

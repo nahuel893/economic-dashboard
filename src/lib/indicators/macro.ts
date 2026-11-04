@@ -14,7 +14,7 @@ export type Frequency = "daily" | "monthly";
  * Variables"), or an INDEC index on datos.gob.ar shown as its change over 12
  * months ("yoy") or over the previous month ("mom").
  */
-type MacroSource = { kind: "bcra"; id: number } | { kind: "indec"; seriesId: string; change: "yoy" | "mom" };
+export type MacroSource = { kind: "bcra"; id: number } | { kind: "indec"; seriesId: string; change: "yoy" | "mom" };
 
 const bcra = (id: number): MacroSource => ({ kind: "bcra", id });
 const indec = (seriesId: string, change: "yoy" | "mom"): MacroSource => ({ kind: "indec", seriesId, change });
@@ -89,6 +89,11 @@ const GROUPS: { id: MacroGroupId; title: string; description: string; variables:
     ],
   },
 ];
+
+/** Every macro variable with its source, for the references at the bottom of the page. */
+export const MACRO_SOURCES = GROUPS.flatMap((group) =>
+  group.variables.map(({ label, source }) => ({ label, source })),
+);
 
 /** `points` feed the card chart; `longPoints` feed the section comparison and correlations. */
 const LOOKBACK: Record<Frequency, { days: number; points: number; longPoints: number }> = {

@@ -5,9 +5,11 @@ import {
   MarketsSection,
   PressureSection,
 } from "@/features/hot/hot-dashboard";
+import { SourceReferences } from "@/components/dashboard/source-references";
 import { MacroGroupSection } from "@/features/macro/macro-sections";
 import { getHotSnapshot } from "@/lib/indicators/hot";
 import { getMacroSnapshot } from "@/lib/indicators/macro";
+import { homeReferences } from "@/lib/indicators/references";
 
 export default async function Home() {
   const [hot, macro] = await Promise.all([getHotSnapshot(), getMacroSnapshot()]);
@@ -37,10 +39,9 @@ export default async function Home() {
         <MarketsSection />
         <MacroGroupSection snapshot={macro} id="indexes" />
 
-        <footer className="text-xs text-muted-foreground">
-          Fuentes: dolarapi.com, ArgentinaDatos, BCRA (Estadísticas v4), INDEC (vía datos.gob.ar) y datos abiertos de BYMA. Los datos de mercado
-          pueden tener demora. No constituye asesoramiento financiero.
-        </footer>
+        <SourceReferences references={homeReferences()}>
+          <p>Los datos de mercado pueden tener demora. No constituye asesoramiento financiero.</p>
+        </SourceReferences>
       </main>
     </HotSnapshotProvider>
   );

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { SourceCitation } from "./source-citation";
 
 export type Delta = { value: number; text: string; label?: string };
 
@@ -50,7 +51,9 @@ export function StatTile({
         {secondary ? <div className="text-sm text-muted-foreground">{secondary}</div> : null}
         {children}
         <p className="mt-auto flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
-          <span>{source}</span>
+          <span>
+            <SourceCitation source={source} />
+          </span>
           {asOf ? <span>{asOf}</span> : null}
         </p>
       </CardContent>
