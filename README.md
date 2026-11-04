@@ -47,6 +47,14 @@ No environment variables are needed: every source is a free, public API.
 
 The hot indicators refresh every 2 minutes in the browser. Each section ends with a comparison panel: a chart with selectable series (level, base 100 or change, depending on what the section measures) and a correlation matrix with 95 % confidence intervals.
 
+### Panel: the whole economy on one screen
+
+A dense, full-width dashboard in the style of a BI report: ten key indicators with their latest value, change over the period and a sparkline, a large chart of the selected indicator, and eight topic charts (dollars, gap, rates vs. inflation, activity, monthly inflation, country risk, reserves).
+
+- One period filter drives every number and chart, and lives in the URL like on Histórico.
+- Clicking an indicator shows it in the large chart.
+- Every chart plots the close of each month, so daily and monthly series share one axis: hovering a month on any chart shows that month on all of them.
+
 ### Histórico: the series over time
 
 ![The "Histórico" tab: one line chart per variable with a month and year range filter](docs/history.png)
@@ -76,8 +84,8 @@ If a source fails, only its tiles show "No disponible"; the rest of the page sti
 
 ```text
 src/
-├── app/               routes: / (Hoy), /historico, /api/hot
-├── features/          UI by feature: hot, macro, compare, history
+├── app/               routes: / (Hoy), /panel, /historico, /api/hot
+├── features/          UI by feature: hot, macro, compare, panel, history
 ├── components/        shared UI (shadcn/ui, nav, tiles)
 └── lib/
     ├── sources/       HTTP clients and response parsers
