@@ -15,6 +15,18 @@ Delivery: exception-ok. Each worktree branch is one slice, merged into `feat/map
   - My call: new KPI `?kpi=actividad`, label "Actividad y empleo", drawn on aglomerado points like unemployment.
   - My call: variants `actividad` (activity rate, the default) and `empleo` (employment rate).
   - If the published files do not have these rates by aglomerado, the unit stops and reports, without inventing data.
+- **S4 Value labels.** User: "bien, a cada vista de mapa hay que agregarle etiquetas, si son porcentajes chicos, encajan bien los datos, si son millones hay que resumir $2,5 M, etc. Te parece hacer eso para cada kpi?", then "si perfecto" to my proposal:
+  - short format on the label, with the exact value in the tooltip and table;
+  - a fixed label point per province and region, and labels next to points;
+  - overlapping labels hidden until zoom;
+  - dark text with a white halo.
+- **S5 Exports by province.** User: "falta agregar exportaciones, depositos y prestamos, y censo 2022". Proposed row: "Exportaciones | Provincia | Semestral | INDEC | Medio".
+  - My call: `?kpi=exportaciones`, variants `total` (US$ millions, default) and `variacion` (year-on-year %).
+- **S6 Deposits and loans by province.** Same user message. Proposed row: "Depósitos y préstamos | Provincia | Trimestral (último dato: marzo de 2026) | BCRA | Medio".
+  - My call: `?kpi=depositos`, variants `depositos` and `prestamos` (millions of pesos), plus `relacion` (loans as % of deposits, which needs no inflation adjustment).
+- **S7 Census 2022 by department.** Same user message. Proposed row: "Censo 2022: población, densidad y necesidades básicas insatisfechas | Departamento (529) | Fijo (2022) | INDEC | Alto".
+  - My call: `?kpi=censo`, variants `poblacion`, `densidad` (inhabitants per km²) and `nbi` (% of households with unmet basic needs). NBI is included only if INDEC publishes it by department for 2022.
+  - Per-person versions of S5 and S6 wait until S7 is merged.
 - **Unchanged.** The existing KPIs, URLs and outputs stay as they are.
 
 ## Tasks
@@ -24,10 +36,19 @@ Delivery: exception-ok. Each worktree branch is one slice, merged into `feat/map
 | T1 | S1, S2 | delegated (parallel with T2, worktree `map-employment`) | done | 87d09c1 |
 | T2 | S1, S3 | delegated (parallel with T1, worktree `map-eph-rates`) | done | 2c6366e |
 | T3 | S1-S3 | inline | done | d739d0a, ec10514, 2bdfaed |
+| T4 | S4 | inline | done | e7a5f1e |
+| T5 | S1, S5 | delegated (parallel, worktree `map-exports`) | pending | |
+| T6 | S1, S6 | delegated (parallel, worktree `map-deposits`) | pending | |
+| T7 | S1, S7 | delegated (parallel, worktree `map-census`) | pending | |
+| T8 | S5-S7 | inline | pending | |
 
 - **T1:** OEDE registered employment by area: source, parser and tests, KPI entry, references and README.
 - **T2:** EPH activity and employment rates: extend the snapshot script, commit the snapshot, then the source, tests, KPI entry, references and README.
 - **T3:** merge both branches into `feat/map-labor`, resolve the shared-file conflicts (`maps.ts`, `page.tsx`, `references.ts`, README), run the full checks once, and do a CDP check of both KPIs.
+
+- **T4:** short value labels on every KPI view.
+- **T5-T7:** one KPI each, with source, tests, catalog entry, references and README. T7 also adds a department geometry.
+- **T8:** merge T5-T7, run the full checks, and do a CDP check.
 
 Route evidence: the user asked for two parallel writers in two worktrees. The units are independent, but both touch the KPI catalog, the page loader and the README, so isolated worktrees are required.
 
@@ -44,4 +65,9 @@ Route evidence: the user asked for two parallel writers in two worktrees. The un
   - CDP check on the production build: "Mendoza Variación interanual: -3,5 % 1.er trimestre de 2026 · OEDE (SIPA)", "La Pampa Puestos de trabajo: 40.566", "Gran Córdoba Tasa de actividad: 50,9 % 2.º trimestre de 2026 · INDEC, EPH". No console errors.
   - **Advisory:** the year-on-year employment change spans negative and positive values but uses the one-hue scale; a diverging scale would show the sign. Not changed, it was not asked for.
   - Not pushed: it needs the user's approval.
+- **L6 (2026-11-05), user:** "bien, a cada vista de mapa hay que agregarle etiquetas, si son porcentajes chicos, encajan bien los datos, si son millones hay que resumir $2,5 M, etc. Te parece hacer eso para cada kpi?", then "si perfecto".
+- **L7:** T4 done (e7a5f1e). `formatCompact` gives "$ 2,76 M", "40,6 mil" and "33,4 %".
+  - Label points come from mapshaper `-points inner`; Salta's was moved off its north-eastern lobe. A test checks that each point is inside its polygon.
+  - Checks: 187 tests, tsc, lint and build pass. The CDP screenshots of wages and activity show the labels; there are no console errors.
+- **L8 (2026-11-05), user:** "falta agregar exportaciones, depositos y prestamos, y censo 2022, entiendo que los 2 primeros kpi que me mostraste en tabla ya estan que no?" Same setup as S1: three Sonnet writers in three worktrees.
 
