@@ -8,9 +8,10 @@ const TABS = [
   { href: "/", label: "Hoy" },
   { href: "/panel", label: "Panel" },
   { href: "/historico", label: "Histórico" },
+  { href: "/mapas", label: "Mapas" },
 ] as const;
 
-/** Tabs between the live dashboard, the one-screen panel and the historical series. */
+/** Tabs between the live dashboard, the one-screen panel, the historical series and the maps. */
 export function SiteNav() {
   const pathname = usePathname();
   return (
