@@ -68,6 +68,11 @@ describe("parseBymaIndex", () => {
     });
   });
 
+  it("keeps the index without a date when BYMA omits it", () => {
+    const undated = { ...raw.data[1], date: undefined };
+    expect(parseBymaIndex({ data: [undated] }, "MMSCI")).toMatchObject({ date: null, value: 92079.66 });
+  });
+
   it("throws when the index is missing", () => {
     expect(() => parseBymaIndex(raw, "NOPE")).toThrow();
   });
