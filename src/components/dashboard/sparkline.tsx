@@ -1,6 +1,7 @@
 "use client";
 
 import { Line, LineChart, Tooltip, YAxis } from "recharts";
+import { useTooltipActive } from "./tooltip-dismiss";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { formatDate, formatValue, type Unit } from "@/lib/format";
 import type { Point } from "@/lib/indicators/types";
@@ -17,6 +18,7 @@ type SparklineProps = {
 
 /** Recent trend line with a crosshair tooltip, drawn in the section tone. */
 export function Sparkline({ points, unit, label }: SparklineProps) {
+  const tooltipActive = useTooltipActive();
   const format = (value: number) => formatValue(value, unit);
   if (points.length < 2) return null;
   const first = points[0];
@@ -35,6 +37,7 @@ export function Sparkline({ points, unit, label }: SparklineProps) {
         <LineChart data={points} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
           <YAxis hide domain={["dataMin", "dataMax"]} />
           <Tooltip
+            active={tooltipActive}
             cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1, strokeDasharray: "3 3" }}
             content={({ active, payload }) => {
               const point = payload?.[0]?.payload as Point | undefined;

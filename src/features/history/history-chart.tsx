@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
+import { useTooltipActive } from "@/components/dashboard/tooltip-dismiss";
 import { useZoomDrag, ZoomBar, ZoomSlider } from "@/components/dashboard/chart-zoom";
 import { SourceCitation } from "@/components/dashboard/source-citation";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
@@ -81,6 +82,7 @@ const CLOSE_LABEL: Record<Granularity, string | null> = {
 };
 
 export function HistoryChart(props: HistoryChartProps) {
+  const tooltipActive = useTooltipActive();
   const { label, description, unit, frequency, granularity, change, summary, source } = props;
   const keys = props.points.map((p) => p.date);
   // The zoom belongs to the selected period: choosing another period starts unzoomed.
@@ -215,6 +217,7 @@ export function HistoryChart(props: HistoryChartProps) {
                 tickFormatter={(v: number) => formatAxisValue(v, unit)}
               />
               <Tooltip
+                active={tooltipActive}
                 cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1, strokeDasharray: "3 3" }}
                 content={({ active, payload }) => {
                   const point = payload?.[0]?.payload as Point | undefined;

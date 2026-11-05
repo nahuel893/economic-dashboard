@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
+import { useTooltipActive } from "@/components/dashboard/tooltip-dismiss";
 import { useZoomDrag, ZoomBar } from "@/components/dashboard/chart-zoom";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { formatDate, formatMonth, formatMonthShort, formatNumber, formatValue } from "@/lib/format";
@@ -33,6 +34,7 @@ function chartPoints(variables: CompareVariable[], mode: CompareSpec["mode"]): {
 }
 
 export function ComparisonPanel({ spec, title }: { spec: CompareSpec; title: string }) {
+  const tooltipActive = useTooltipActive();
   const id = useId();
   // Every variable starts selected.
   const [hidden, setHidden] = useState<Set<string>>(() => new Set());
@@ -129,6 +131,7 @@ export function ComparisonPanel({ spec, title }: { spec: CompareSpec; title: str
                 <ReferenceLine y={spec.mode === "index100" ? 100 : 0} stroke="var(--muted-foreground)" strokeDasharray="4 4" />
               ) : null}
               <Tooltip
+                active={tooltipActive}
                 cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1, strokeDasharray: "3 3" }}
                 content={({ active: isActive, payload, label }) => {
                   if (!isActive || !payload?.length) return null;

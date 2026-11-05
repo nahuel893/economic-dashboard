@@ -2,6 +2,7 @@
 
 import { useId, type ReactNode } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
+import { useTooltipActive } from "@/components/dashboard/tooltip-dismiss";
 import { useZoomDrag, ZoomSlider } from "@/components/dashboard/chart-zoom";
 import { SourceCitation } from "@/components/dashboard/source-citation";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
@@ -46,6 +47,7 @@ function tickLabel(month: string, byYear: boolean) {
 export const formatPanelMonth = (month: string) => formatMonth(monthDate(month));
 
 export function PanelChart(props: PanelChartProps) {
+  const tooltipActive = useTooltipActive();
   const { title, description, kind, unit, series, source, size, headline, className, zoom, onZoom, slider } = props;
   const keys = props.rows.map((row) => row.month);
   const zoomDrag = useZoomDrag(keys, onZoom);
@@ -129,6 +131,7 @@ export function PanelChart(props: PanelChartProps) {
               />
               {kind === "bar" ? <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeOpacity={0.6} /> : null}
               <Tooltip
+                active={tooltipActive}
                 cursor={kind === "bar" ? { fill: "var(--foreground)", fillOpacity: 0.06 } : { stroke: "var(--muted-foreground)", strokeDasharray: "3 3" }}
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;

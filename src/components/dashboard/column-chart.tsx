@@ -1,6 +1,7 @@
 "use client";
 
 import { Bar, BarChart, Cell, LabelList, Tooltip, XAxis, YAxis } from "recharts";
+import { useTooltipActive } from "./tooltip-dismiss";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { formatMonth, formatMonthShort, formatNumber, formatValue, type Unit } from "@/lib/format";
 import type { Point } from "@/lib/indicators/types";
@@ -21,6 +22,7 @@ type ColumnChartProps = {
  * stands out.
  */
 export function ColumnChart({ points, unit, label }: ColumnChartProps) {
+  const tooltipActive = useTooltipActive();
   if (points.length < 2) return null;
   const last = points.length - 1;
 
@@ -51,6 +53,7 @@ export function ColumnChart({ points, unit, label }: ColumnChartProps) {
           tickFormatter={(date: string) => formatMonthShort(date).slice(0, 3)}
         />
         <Tooltip
+          active={tooltipActive}
           cursor={{ fill: "var(--muted)", opacity: 0.4 }}
           content={({ active, payload }) => {
             const point = payload?.[0]?.payload as Point | undefined;
