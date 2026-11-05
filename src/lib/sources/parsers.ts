@@ -35,7 +35,8 @@ export function parseBcraSeries(raw: BcraSeriesResponse): Point[] {
 }
 
 type BymaIndex = {
-  date: string;
+  /** BYMA stopped sending it in November 2026. */
+  date?: string;
   symbol: string;
   description: string;
   price: number;
@@ -50,7 +51,7 @@ export function parseBymaIndex(raw: { data: BymaIndex[] }, symbol: string): Inde
   const index = raw.data.find((i) => i.symbol === symbol);
   if (!index) throw new Error(`BYMA index ${symbol} not found`);
   return {
-    date: index.date,
+    date: index.date && !Number.isNaN(Date.parse(index.date)) ? index.date : null,
     name: index.description,
     value: index.price,
     previousClose: index.previousClosingPrice,

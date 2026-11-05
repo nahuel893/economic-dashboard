@@ -150,7 +150,7 @@ export function MervalTile({ indicator }: { indicator: Indicator<MervalData> }) 
       delta={{ value: changePct, text: formatSignedPercent(changePct, 2), label: "hoy" }}
       badge="Con demora"
       source={indicator.source}
-      asOf={formatDate(date)}
+      asOf={date ? formatDate(date) : undefined}
     >
       <RangeMeter
         value={value}

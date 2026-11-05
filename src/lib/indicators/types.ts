@@ -42,7 +42,8 @@ export type BandData = {
 export type CountryRiskData = { value: number; date: string; change: number | null; history: Point[] };
 
 export type IndexData = {
-  date: string;
+  /** Trading day, or null when the source omits it. */
+  date: string | null;
   name: string;
   value: number;
   previousClose: number;
