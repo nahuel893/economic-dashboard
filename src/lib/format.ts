@@ -41,7 +41,7 @@ export function formatArsMillions(millions: number): string {
 }
 
 /** Serializable unit names, so server components can tell client charts how to format. */
-export type Unit = "ars" | "ars2" | "percent" | "bps" | "usdMillions" | "arsMillions" | "index" | "index2";
+export type Unit = "ars" | "count" | "ars2" | "percent" | "bps" | "usdMillions" | "arsMillions" | "index" | "index2";
 
 export function formatValue(value: number, unit: Unit): string {
   switch (unit) {
@@ -51,6 +51,8 @@ export function formatValue(value: number, unit: Unit): string {
       return formatArs(value, 2);
     case "percent":
       return formatPercent(value);
+    case "count":
+      return formatNumber(value);
     case "bps":
       return `${formatNumber(value)} pb`;
     case "usdMillions":

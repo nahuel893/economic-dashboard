@@ -1,8 +1,8 @@
 /**
  * The "Mapas" tab: a catalog of the KPIs the map can show, how the URL picks
  * one of them, and the pure work of turning a period's values into colored
- * places. Each KPI is drawn on the geography its source publishes: wages by
- * area, inflation by region (each area takes its region's value) and the EPH
+ * places. Each KPI is drawn on the geography its source publishes: wages and
+ * employment by area, inflation by region (each area takes its region's value) and the EPH
  * KPIs by aglomerado, as points, never painted on provinces.
  */
 import { formatMonth, type Unit } from "@/lib/format";
@@ -10,7 +10,7 @@ import { SOURCE_NAMES } from "@/lib/sources/citations";
 import { AGLOMERADOS, AREAS, REGIONS, type AreaId } from "./geography";
 import type { MapSeries } from "./map-data";
 
-export type MapKpiId = "salarios" | "pobreza" | "inflacion" | "desocupacion";
+export type MapKpiId = "salarios" | "empleo" | "pobreza" | "inflacion" | "desocupacion";
 
 /** Where values are drawn: area fills, area fills by region, or aglomerado points. */
 export type MapGeometry = "areas" | "regions" | "aglomerados";
@@ -22,6 +22,8 @@ export type MapVariant = {
   /** Key of the variant's MapSeries in the KPI's data. */
   series: string;
   description: string;
+  /** Unit of the variant's values when it differs from the KPI's. */
+  unit?: Unit;
 };
 
 export type MapKpi = {
@@ -29,6 +31,7 @@ export type MapKpi = {
   id: MapKpiId;
   label: string;
   geometry: MapGeometry;
+  /** Unit of the default variant's values; see `MapVariant.unit`. */
   unit: Unit;
   /** Short source name, as cited on the map. */
   source: string;
@@ -49,6 +52,29 @@ export const MAP_KPIS: MapKpi[] = [
         label: "Salario promedio",
         series: "level",
         description: "Remuneración promedio de los asalariados registrados del sector privado, en pesos corrientes.",
+      },
+    ],
+  },
+  {
+    id: "empleo",
+    label: "Empleo registrado",
+    geometry: "areas",
+    unit: "percent",
+    source: SOURCE_NAMES.oede,
+    variants: [
+      {
+        slug: "variacion",
+        label: "Variación interanual",
+        series: "yearOnYear",
+        description:
+          "Variación porcentual de los puestos de trabajo asalariados registrados del sector privado respecto del mismo trimestre del año anterior.",
+      },
+      {
+        slug: "puestos",
+        label: "Puestos de trabajo",
+        series: "jobs",
+        description: "Cantidad de puestos de trabajo asalariados registrados del sector privado.",
+        unit: "count",
       },
     ],
   },
@@ -269,7 +295,7 @@ export function buildMapView({ kpi, variant, period }: MapSelection, data: MapKp
     kpi: kpi.id,
     label: kpi.label,
     geometry: kpi.geometry,
-    unit: kpi.unit,
+    unit: variant.unit ?? kpi.unit,
     source: kpi.source,
     variant: variant.slug,
     variantLabel: variant.label,

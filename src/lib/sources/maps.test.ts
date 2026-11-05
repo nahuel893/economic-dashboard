@@ -7,9 +7,18 @@ vi.mock("next/cache", () => ({ cacheLife }));
 vi.mock("./http", () => ({ fetchJson }));
 
 import { CACHE } from "./clients";
-import { getEphPovertyMap, getRegionalInflationMap, getUnemploymentMap, getWageMap, IPC_REGION_SERIES, WAGES_URL } from "./maps";
+import { EMPLOYMENT_URL,
+  getEmploymentMap,
+  getEphPovertyMap,
+  getRegionalInflationMap,
+  getUnemploymentMap,
+  getWageMap,
+  IPC_REGION_SERIES,
+  WAGES_URL,
+} from "./maps";
 
 const workbook = readFileSync(new URL("./__fixtures__/oede-wages.xlsx", import.meta.url));
+const employmentWorkbook = readFileSync(new URL("./__fixtures__/oede-employment.xlsx", import.meta.url));
 const INDEX_URL = "https://www.argentina.gob.ar/node/142211";
 const CURRENT = "https://www.argentina.gob.ar/sites/default/files/provinciales_serie_remuneraciones_mensual_2dig_10.xlsx";
 
@@ -63,6 +72,32 @@ describe("map loaders", () => {
     });
     await expect(getWageMap()).rejects.toThrow("GET www.argentina.gob.ar responded 404");
     expect(cacheLife).toHaveBeenCalledWith(expect.objectContaining({ revalidate: 60 }));
+  });
+
+  it("reads the quarterly employment workbook linked from the OEDE index page and caches it", async () => {
+    const current = "https://www.argentina.gob.ar/sites/default/files/provinciales_serie_empleo_trimestral_2dig_8.xlsx";
+    const fetchMock = mockFetch({
+      [INDEX_URL]: () => new Response('<a href="/sites/default/files/provinciales_serie_empleo_trimestral_2dig_8.xlsx">'),
+      [current]: () => new Response(employmentWorkbook),
+    });
+    const { jobs, yearOnYear } = await getEmploymentMap();
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([INDEX_URL, current]);
+    expect(jobs.periods.map((p) => p.period)).toEqual(["2025-Q1", "2025-Q2", "2025-Q3", "2025-Q4", "2026-Q1"]);
+    expect(jobs.periods[4].values["02"]).toEqual({ value: 1040 });
+    expect(jobs.periods[4].values["06-gba"]).toEqual({ value: 2040 });
+    expect(jobs.periods[4].values["94"]).toEqual({ value: 25040 });
+    expect(yearOnYear.periods.map((p) => p.period)).toEqual(["2026-Q1"]);
+    expect(yearOnYear.periods[0].values["06-gba"].value).toBeCloseTo((2040 / 2000 - 1) * 100, 10);
+    expect(cacheLife).toHaveBeenCalledWith(CACHE.slow);
+  });
+
+  it("falls back to the pinned employment workbook when the index page fails", async () => {
+    const fetchMock = mockFetch({
+      [INDEX_URL]: () => new Response("busy", { status: 503 }),
+      [EMPLOYMENT_URL]: () => new Response(employmentWorkbook),
+    });
+    await expect(getEmploymentMap()).resolves.toMatchObject({ jobs: { periods: expect.any(Array) } });
+    expect(fetchMock.mock.calls.at(-1)?.[0]).toBe(EMPLOYMENT_URL);
   });
 
   it("computes regional inflation from the six IPC level series", async () => {

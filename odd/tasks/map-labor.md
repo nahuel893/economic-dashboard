@@ -21,7 +21,7 @@ Delivery: exception-ok. Each worktree branch is one slice, merged into `feat/map
 
 | ID | Specs | Route | Status | Commit |
 |----|-------|-------|--------|--------|
-| T1 | S1, S2 | delegated (parallel with T2, worktree `map-employment`) | pending | |
+| T1 | S1, S2 | delegated (parallel with T2, worktree `map-employment`) | done | see Log |
 | T2 | S1, S3 | delegated (parallel with T1, worktree `map-eph-rates`) | pending | |
 | T3 | S1-S3 | inline | pending | |
 

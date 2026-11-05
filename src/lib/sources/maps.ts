@@ -5,11 +5,18 @@
  * like the other clients; EPH data are committed snapshots (scripts/maps).
  */
 import { readSheet } from "read-excel-file/node";
-import { REGIONS, type RegionId } from "@/lib/indicators/geography";
+import { AREAS, REGIONS, type RegionId } from "@/lib/indicators/geography";
 import type { MapSeries } from "@/lib/indicators/map-data";
 import { attempt, CACHE, type Outcome, unwrap } from "./clients";
 import { fetchJson } from "./http";
-import { findWageWorkbookUrl, parseOedeWages, type PovertySeries, regionalInflation } from "./map-parsers";
+import {
+  findOedeWorkbookUrl,
+  parseOedeEmployment,
+  parseOedeWages,
+  type PovertySeries,
+  regionalInflation,
+  type Row,
+} from "./map-parsers";
 import { parseDatosSeries } from "./parsers";
 import povertySnapshot from "./snapshots/eph-poverty.json";
 import unemploymentSnapshot from "./snapshots/eph-unemployment.json";
@@ -17,8 +24,8 @@ import unemploymentSnapshot from "./snapshots/eph-unemployment.json";
 /** Months of history each monthly map keeps. */
 const MONTHS = 36;
 
-/** OEDE index page that links the current wage workbook. */
-const WAGES_INDEX_URL = "https://www.argentina.gob.ar/node/142211";
+/** OEDE index page that links the current wage and employment workbooks. */
+const OEDE_INDEX_URL = "https://www.argentina.gob.ar/node/142211";
 
 /** Known wage workbook, used when the index page fails or no longer links one. */
 export const WAGES_URL =
@@ -37,24 +44,54 @@ async function fetchFile(url: string): Promise<Response> {
   return response;
 }
 
-async function currentWagesUrl(): Promise<string> {
+/** The workbook of a file series linked from the OEDE index page, or the pinned one when the page fails or no longer links it. */
+async function currentOedeUrl(stem: string, pinned: string): Promise<string> {
   try {
-    return findWageWorkbookUrl(await (await fetchFile(WAGES_INDEX_URL)).text()) ?? WAGES_URL;
+    return findOedeWorkbookUrl(await (await fetchFile(OEDE_INDEX_URL)).text(), stem) ?? pinned;
   } catch {
-    return WAGES_URL;
+    return pinned;
   }
 }
 
 async function cachedWageMap(): Promise<Outcome<MapSeries>> {
   "use cache";
   return attempt(CACHE.slow, async () => {
-    const workbook = Buffer.from(await (await fetchFile(await currentWagesUrl())).arrayBuffer());
+    const workbook = Buffer.from(await (await fetchFile(await currentOedeUrl("provinciales_serie_remuneraciones_mensual_2dig", WAGES_URL))).arrayBuffer());
     return parseOedeWages(await readSheet(workbook, "Total"), MONTHS);
   });
 }
 
 /** Average registered private wage by area (OEDE/SIPA), in current pesos; June and December include the aguinaldo. */
 export const getWageMap = async () => unwrap(await cachedWageMap());
+
+/** Known quarterly employment workbook, used when the index page fails or no longer links one. */
+export const EMPLOYMENT_URL =
+  "https://www.argentina.gob.ar/sites/default/files/provinciales_serie_empleo_trimestral_2dig_7.xlsx";
+
+/** Quarters of employment the map keeps: the same three years as the monthly maps. */
+const QUARTERS = MONTHS / 3;
+
+/** Sheet of each area in the employment workbook: Buenos Aires is split in three, the others are named without accents. */
+export const EMPLOYMENT_SHEETS: Record<string, string> = Object.fromEntries(
+  AREAS.map(({ id, name }) => [id, name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")]),
+);
+EMPLOYMENT_SHEETS["02"] = "CABA";
+EMPLOYMENT_SHEETS["06-gba"] = "Partidos de GBA";
+
+async function cachedEmploymentMap(): Promise<Outcome<{ jobs: MapSeries; yearOnYear: MapSeries }>> {
+  "use cache";
+  return attempt(CACHE.slow, async () => {
+    const workbook = Buffer.from(
+      await (await fetchFile(await currentOedeUrl("provinciales_serie_empleo_trimestral_2dig", EMPLOYMENT_URL))).arrayBuffer(),
+    );
+    const sheets: Record<string, Row[]> = {};
+    for (const [area, sheet] of Object.entries(EMPLOYMENT_SHEETS)) sheets[area] = await readSheet(workbook, sheet);
+    return parseOedeEmployment(sheets, QUARTERS);
+  });
+}
+
+/** Registered private employment by area (OEDE/SIPA): jobs and their year-on-year change, quarterly. */
+export const getEmploymentMap = async () => unwrap(await cachedEmploymentMap());
 
 /**
  * General-level IPC by region, base December 2016, monthly. The 148.3_* ids

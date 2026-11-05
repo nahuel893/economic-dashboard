@@ -3,7 +3,9 @@ import { AGLOMERADOS, AREAS } from "@/lib/indicators/geography";
 import {
   ephPovertySeries,
   findWageWorkbookUrl,
+  findOedeWorkbookUrl,
   parseEphQuarterly,
+  parseOedeEmployment,
   parseOedeWages,
   regionalInflation,
 } from "./map-parsers";
@@ -232,5 +234,85 @@ describe("parseEphQuarterly", () => {
   it("fails when an aglomerado row is missing", () => {
     const table = unemploymentTable().filter((row) => row[0] !== "Gran Rosario");
     expect(() => parseEphQuarterly(table, 12)).toThrow("EPH: no row for aglomerado 4 (Gran Rosario)");
+  });
+});
+
+/** Quarter headers as OEDE spells them, with the ordinal sign of the first quarters and the degree sign of the rest. */
+const QUARTERS = ["1º Trim 2025", "2° Trim 2025", "3° Trim 2025", "4° Trim 2025", "1° Trim 2026", "2° Trim 2026"];
+
+/** One province sheet of the quarterly employment workbook: a header, sector rows and a TOTAL row. */
+function employmentSheet(base: number, missingLast = false) {
+  const total = QUARTERS.map((_, q) => (missingLast && q === QUARTERS.length - 1 ? "s.d." : base + 10 * q));
+  return [
+    ["Province name"],
+    ["Empleo. Asalariados registrados del sector privado por rama de actividad"],
+    [null, "Ramas de actividad", ...QUARTERS],
+    ["A", "AGRICULTURA", ...QUARTERS.map(() => 5)],
+    [null, "TOTAL", ...total],
+    ["Fuente: STEySS, en base a SIPA."],
+  ];
+}
+
+const employmentSheets = (missing?: string) =>
+  Object.fromEntries(AREAS.map((a, i) => [a.id, employmentSheet(1000 + 100 * i, a.id === missing)]));
+
+describe("parseOedeEmployment", () => {
+  it("reads each province's TOTAL row by quarter, keyed by map area", () => {
+    const { jobs } = parseOedeEmployment(employmentSheets(), 36);
+    expect(jobs.periods.map((p) => p.period)).toEqual(["2025-Q1", "2025-Q2", "2025-Q3", "2025-Q4", "2026-Q1", "2026-Q2"]);
+    const last = jobs.periods[5].values;
+    expect(Object.keys(last).sort()).toEqual(AREAS.map((a) => a.id).sort());
+    expect(last["06-gba"]).toEqual({ value: 1150 });
+    expect(last["06-resto"]).toEqual({ value: 1250 });
+    expect(last["94"]).toEqual({ value: 3450 });
+  });
+
+  it("computes the year-on-year change against the same quarter a year earlier", () => {
+    const { yearOnYear } = parseOedeEmployment(employmentSheets(), 36);
+    expect(yearOnYear.periods.map((p) => p.period)).toEqual(["2026-Q1", "2026-Q2"]);
+    // "06-gba" is the second area: 1100 + 10 * 5 = 1150 against 1100 + 10 * 1 = 1110.
+    expect(yearOnYear.periods[1].values["06-gba"].value).toBeCloseTo((1150 / 1110 - 1) * 100, 10);
+  });
+
+  it("keeps only the most recent quarters in both variants", () => {
+    const { jobs, yearOnYear } = parseOedeEmployment(employmentSheets(), 1);
+    expect(jobs.periods.map((p) => p.period)).toEqual(["2026-Q2"]);
+    expect(yearOnYear.periods.map((p) => p.period)).toEqual(["2026-Q2"]);
+  });
+
+  it("leaves an area without a value for a quarter with a missing cell", () => {
+    const { jobs, yearOnYear } = parseOedeEmployment(employmentSheets("14"), 36);
+    expect(jobs.periods[5].values["14"]).toBeUndefined();
+    expect(jobs.periods[4].values["14"]).toBeDefined();
+    expect(yearOnYear.periods[1].values["14"]).toBeUndefined();
+    expect(yearOnYear.periods[1].values["10"]).toBeDefined();
+  });
+
+  it("fails when an area has no sheet", () => {
+    const rest = employmentSheets();
+    delete rest["06-gba"];
+    expect(() => parseOedeEmployment(rest, 36)).toThrow("OEDE employment: no sheet for 06-gba");
+  });
+
+  it("fails when a sheet has no quarter header or no TOTAL row", () => {
+    expect(() => parseOedeEmployment({ ...employmentSheets(), "02": [["x"]] }, 36)).toThrow(
+      "OEDE employment: header row not found in the sheet of 02",
+    );
+    expect(() =>
+      parseOedeEmployment({ ...employmentSheets(), "02": employmentSheet(1).filter((r) => r[1] !== "TOTAL") }, 36),
+    ).toThrow("OEDE employment: TOTAL row not found in the sheet of 02");
+  });
+});
+
+describe("findOedeWorkbookUrl", () => {
+  it("finds the current quarterly employment workbook, whatever its numeric suffix", () => {
+    const html = '<a href="/sites/default/files/provinciales_serie_empleo_trimestral_2dig_9.xlsx">';
+    expect(findOedeWorkbookUrl(html, "provinciales_serie_empleo_trimestral_2dig")).toBe(
+      "https://www.argentina.gob.ar/sites/default/files/provinciales_serie_empleo_trimestral_2dig_9.xlsx",
+    );
+  });
+
+  it("returns null when the page does not link it", () => {
+    expect(findOedeWorkbookUrl("<html></html>", "provinciales_serie_empleo_trimestral_2dig")).toBeNull();
   });
 });

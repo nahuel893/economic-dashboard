@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { formatNumber, formatValue } from "@/lib/format";
 import { AGLOMERADOS, AREAS, REGIONS } from "./geography";
 import type { MapSeries } from "./map-data";
 import {
@@ -25,6 +26,8 @@ const series = (periods: MapSeries["periods"]): MapSeries => ({ periods });
 
 const PERIODS: Record<string, string[]> = {
   "salarios/level": ["2026-04", "2026-05", "2026-06"],
+  "empleo/yearOnYear": ["2025-Q4", "2026-Q1"],
+  "empleo/jobs": ["2026-Q1"],
   "pobreza/povertyPersons": ["2025-H2", "2026-H1"],
   "pobreza/povertyHouseholds": ["2025-H2", "2026-H1"],
   "pobreza/indigencePersons": ["2026-H1"],
@@ -36,9 +39,10 @@ const PERIODS: Record<string, string[]> = {
 const periodsOf = (k: MapKpi, v: MapVariant) => PERIODS[`${k.id}/${v.series}`] ?? [];
 
 describe("MAP_KPIS", () => {
-  it("offers wages, poverty, inflation and unemployment, each on its honest geography", () => {
+  it("offers wages, employment, poverty, inflation and unemployment, each on its honest geography", () => {
     expect(MAP_KPIS.map((k) => [k.id, k.geometry, k.unit])).toEqual([
       ["salarios", "areas", "ars"],
+      ["empleo", "areas", "percent"],
       ["pobreza", "aglomerados", "percent"],
       ["inflacion", "regions", "percent"],
       ["desocupacion", "aglomerados", "percent"],
@@ -53,12 +57,13 @@ describe("MAP_KPIS", () => {
       "indigencia-hogares",
     ]);
     expect(kpi("inflacion").variants.map((v) => v.slug)).toEqual(["mensual", "interanual"]);
+    expect(kpi("empleo").variants.map((v) => v.slug)).toEqual(["variacion", "puestos"]);
     expect(kpi("salarios").variants).toHaveLength(1);
     expect(kpi("desocupacion").variants).toHaveLength(1);
   });
 
   it("cites each source by its short name", () => {
-    expect(MAP_KPIS.map((k) => k.source)).toEqual(["OEDE (SIPA)", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, EPH"]);
+    expect(MAP_KPIS.map((k) => k.source)).toEqual(["OEDE (SIPA)", "OEDE (SIPA)", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, EPH"]);
   });
 });
 
@@ -76,6 +81,12 @@ describe("resolveMapSelection", () => {
     expect(resolve({ kpi: "pobreza", valor: "hogares", periodo: "2025-s2" })).toEqual(["pobreza", "hogares", "2025-H2"]);
     expect(resolve({ kpi: "desocupacion", periodo: "2026-t1" })).toEqual(["desocupacion", "tasa", "2026-Q1"]);
     expect(resolve({ kpi: "salarios", periodo: "2026-05" })).toEqual(["salarios", "promedio", "2026-05"]);
+  });
+
+  it("resolves employment to the year-on-year change by default and to the jobs on request", () => {
+    expect(resolve({ kpi: "empleo" })).toEqual(["empleo", "variacion", "2026-Q1"]);
+    expect(resolve({ kpi: "empleo", valor: "puestos", periodo: "2026-t1" })).toEqual(["empleo", "puestos", "2026-Q1"]);
+    expect(mapHref("empleo", "puestos", "2026-Q1")).toBe("/mapas?kpi=empleo&valor=puestos&periodo=2026-t1");
   });
 
   it("falls back on unknown or missing values instead of failing", () => {
@@ -152,6 +163,17 @@ describe("buildMapView", () => {
       { period: "2026-06", values: { "02": { value: 150 }, "14": { value: 75 } }, note: "Incluye aguinaldo" },
     ]),
   };
+
+  it("formats employment as a % change by default and as a plain count for the jobs", () => {
+    const employment: MapKpiData = {
+      yearOnYear: series([{ period: "2026-Q1", values: { "02": { value: -1.5 } } }]),
+      jobs: series([{ period: "2026-Q1", values: { "02": { value: 1234567 } } }]),
+    };
+    const unitOf = (valor?: string) => buildMapView(resolveMapSelection({ kpi: "empleo", valor }, periodsOf), employment)!.unit;
+    expect(unitOf()).toBe("percent");
+    expect(unitOf("puestos")).toBe("count");
+    expect(formatValue(1234567, "count")).toBe(formatNumber(1234567));
+  });
 
   it("joins the period's values to every area, with no-data areas gray", () => {
     const view = buildMapView(resolveMapSelection({ kpi: "salarios" }, periodsOf), wages)!;
