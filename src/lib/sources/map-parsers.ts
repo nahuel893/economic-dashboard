@@ -156,6 +156,88 @@ export function parseOedeEmployment(
   };
 }
 
+/* ---------------------------------- OPEX ---------------------------------- */
+
+/**
+ * INDEC "Origen provincial de las exportaciones" (OPEX), sheet "Region-prov
+ * 2016-2026 semestre": goods exports in millions of USD by province, for the
+ * first half of each year. INDEC reports Buenos Aires as one province (the
+ * city is its own row), so both map halves of the province take its total and
+ * the period says so; nothing is split by guessing. Region, "Extranjero y
+ * plataforma continental" and "Indeterminado" rows have no province and are
+ * left out, as is the grand total.
+ */
+const OPEX_SPECIAL: Record<string, string[]> = {
+  "buenos aires": ["06-gba", "06-resto"],
+  "ciudad autonoma de buenos aires": ["02"],
+  "tierra del fuego, antartida e islas del atlantico sur": ["94"],
+};
+
+const OPEX_AREAS = new Map<string, string[]>([
+  ...AREAS.filter((a) => a.province !== "06").map((a): [string, string[]] => [normalizeLabel(a.name), [a.id]]),
+  ...Object.entries(OPEX_SPECIAL),
+]);
+
+const OPEX_BUENOS_AIRES_NOTE =
+  "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial";
+
+/**
+ * First-half exports by area, in millions of USD, and their year-on-year %
+ * change against the first half of the previous year. The latest years are
+ * provisional (marked with "*" in the header) and carry a note. Fails on a
+ * province row it cannot place and on an area without a row.
+ */
+export function parseOpexSemesters(rows: Row[]): { total: MapSeries; yearOnYear: MapSeries } {
+  const header = rows.findIndex((row) => label(row[1]) !== null && normalizeLabel(label(row[1])!) === "provincias");
+  if (header < 0 || !rows[header + 1]) throw new Error("OPEX: header row not found");
+  const years = rows[header + 1].flatMap((cell, index) => {
+    const match = String(cell ?? "").match(/^(\d{4})(\*?)$/);
+    return match ? [{ index, year: Number(match[1]), provisional: match[2] === "*" }] : [];
+  });
+  if (!years.length) throw new Error("OPEX: no year columns found");
+
+  const exports = new Map<string, Map<number, number>>();
+  for (const row of rows.slice(header + 2)) {
+    const name = label(row[1]);
+    if (!name) continue;
+    const key = normalizeLabel(name);
+    if (key === "total general") continue;
+    const areas = OPEX_AREAS.get(key);
+    if (!areas) throw new Error(`OPEX: unknown province row "${name.trim()}"`);
+    for (const area of areas) {
+      const byYear = new Map<number, number>();
+      for (const { index, year } of years) {
+        const value = number(row[index]);
+        if (value !== null) byYear.set(year, value);
+      }
+      exports.set(area, byYear);
+    }
+  }
+  const missing = AREAS.find((a) => !exports.has(a.id));
+  if (missing) throw new Error(`OPEX: no row for ${missing.id}`);
+
+  const toSeries = (valueOf: (byYear: Map<number, number>, year: number) => number | null): MapSeries => ({
+    periods: years.flatMap(({ year, provisional }): MapPeriod[] => {
+      const values: Record<string, MapValue> = {};
+      for (const [area, byYear] of exports) {
+        const value = valueOf(byYear, year);
+        if (value !== null) values[area] = { value };
+      }
+      if (!Object.keys(values).length) return [];
+      const notes = [OPEX_BUENOS_AIRES_NOTE, ...(provisional ? ["dato provisorio"] : [])];
+      return [{ period: `${year}-H1`, values, note: `${notes.join("; ")}.` }];
+    }),
+  });
+
+  return {
+    total: toSeries((byYear, year) => byYear.get(year) ?? null),
+    yearOnYear: toSeries((byYear, year) => {
+      const [now, before] = [byYear.get(year), byYear.get(year - 1)];
+      return now !== undefined && before ? (now / before - 1) * 100 : null;
+    }),
+  };
+}
+
 /* ----------------------------------- IPC ---------------------------------- */
 
 /**

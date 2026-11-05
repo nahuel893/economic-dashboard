@@ -73,7 +73,7 @@ One line chart per variable (dollars, gap, inflation, economic activity, country
 
 ### Mapas: where things happen
 
-One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a KPI selector, its value variants and a period selector that starts at the latest data. KPI, value and period live in the URL (`?kpi=pobreza&valor=hogares&periodo=2026-s1`; employment is `?kpi=empleo`, with `valor=variacion` by default or `valor=puestos`).
+One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a KPI selector, its value variants and a period selector that starts at the latest data. KPI, value and period live in the URL (`?kpi=pobreza&valor=hogares&periodo=2026-s1`; employment is `?kpi=empleo`, with `valor=variacion` by default or `valor=puestos`; exports are `?kpi=exportaciones`, with `valor=total` by default or `valor=variacion`).
 
 | KPI | Drawn on | Periods |
 |-----|----------|---------|
@@ -84,8 +84,10 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 | Inflation, monthly and year-on-year (INDEC) | The 6 INDEC regions | Monthly |
 | Unemployment rate (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
 | Activity and employment rates (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
+| Exports of goods, millions of USD or year-on-year % change (INDEC, OPEX) | Provinces; INDEC reports Buenos Aires as one province, so both of its halves show the same total | First half of each year (provisional for the latest years) |
 
 - Each value is shown where its source measures it: INDEC publishes poverty and the labor rates only for urban areas, never by province, so they are points. Survey estimates with a coefficient of variation above 16 % carry a "usar con cuidado" mark.
+- INDEC publishes exports by province of origin per half-year (the first half in September, the full year in March); the map uses the first half of each year so the year-on-year change compares like with like. Exports with an undetermined origin, from abroad or from the continental shelf are left out. The data are a committed snapshot of INDEC's legacy `.xls` annex: refresh it with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/opex-snapshot.mts` (needs LibreOffice).
 - OEDE publishes provincial employment per quarter, not per month, in a workbook with one sheet per province; the map reads the TOTAL row of each and computes the year-on-year change itself.
 - Deposits and loans (`?kpi=depositos`, with `valor=depositos` by default, `valor=prestamos` or `valor=relacion`, loans as % of deposits) come from the BCRA's `vol4_ser.txt` "Información por provincia" file, read at runtime. It has no labels, so the parser checks its layout against the data (the provinces must add up to the national total) and fails instead of mislabelling. Balances belong to the province of the bank branch, not of the depositor. The BCRA already splits Buenos Aires into Gran Buenos Aires and the rest of the province, so no total is split by guesswork. Peso amounts label as "$ 98,2 B" (billones, 10^12) or "$ 12,3 mil M" (mil millones).
 - Hover or tap a place for its value, period and source; a table under the map lists the same values.
@@ -104,6 +106,7 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 | [BYMA open data](https://open.bymadata.com.ar) | Merval |
 | [OEDE, Ministerio de Capital Humano](https://www.argentina.gob.ar/node/142211) | Wages (monthly) and registered employment (quarterly) by province (Mapas) |
 | [INDEC, EPH](https://www.indec.gob.ar) | Poverty, indigence, unemployment, activity and employment by urban area (Mapas) |
+| [INDEC, OPEX](https://www.indec.gob.ar) | Goods exports by province of origin, first half of each year (Mapas) |
 | [IGN via georef](https://datosgobar.github.io/georef-ar-api/) and [OpenFreeMap](https://openfreemap.org) | Boundaries and basemap (Mapas) |
 
 Every card and chart cites its source by name, linked to the full references at the bottom of the page: endpoints, BCRA variable numbers, INDEC series ids and how often each one is queried (`src/lib/indicators/references.ts`).
