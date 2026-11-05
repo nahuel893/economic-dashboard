@@ -74,17 +74,13 @@
             "94": {
               "value": 97.14764665
             },
-            "06-gba": {
-              "value": 8973.42974791
-            },
-            "06-resto": {
+            "06": {
               "value": 8973.42974791
             },
             "02": {
               "value": 150.07060568
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2017-H1",
@@ -155,17 +151,13 @@
             "94": {
               "value": 91.47087562
             },
-            "06-gba": {
-              "value": 9255.60843374
-            },
-            "06-resto": {
+            "06": {
               "value": 9255.60843374
             },
             "02": {
               "value": 163.32595801
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2018-H1",
@@ -236,17 +228,13 @@
             "94": {
               "value": 114.61493654
             },
-            "06-gba": {
-              "value": 10097.41800951
-            },
-            "06-resto": {
+            "06": {
               "value": 10097.41800951
             },
             "02": {
               "value": 164.16392239
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2019-H1",
@@ -317,17 +305,13 @@
             "94": {
               "value": 151.26917311
             },
-            "06-gba": {
-              "value": 10997.86320358
-            },
-            "06-resto": {
+            "06": {
               "value": 10997.86320358
             },
             "02": {
               "value": 175.61337188
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2020-H1",
@@ -398,17 +382,13 @@
             "94": {
               "value": 127.78382213
             },
-            "06-gba": {
-              "value": 9654.45825067
-            },
-            "06-resto": {
+            "06": {
               "value": 9654.45825067
             },
             "02": {
               "value": 161.03595726
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2021-H1",
@@ -479,17 +459,13 @@
             "94": {
               "value": 157.78388018
             },
-            "06-gba": {
-              "value": 12560.48027788
-            },
-            "06-resto": {
+            "06": {
               "value": 12560.48027788
             },
             "02": {
               "value": 127.28572254
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2022-H1",
@@ -560,17 +536,13 @@
             "94": {
               "value": 233.91365624
             },
-            "06-gba": {
-              "value": 16350.73912751
-            },
-            "06-resto": {
+            "06": {
               "value": 16350.73912751
             },
             "02": {
               "value": 131.92589406
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2023-H1",
@@ -641,17 +613,13 @@
             "94": {
               "value": 148.29505469
             },
-            "06-gba": {
-              "value": 13012.01368213
-            },
-            "06-resto": {
+            "06": {
               "value": 13012.01368213
             },
             "02": {
               "value": 144.32371188
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2024-H1",
@@ -722,17 +690,14 @@
             "94": {
               "value": 197.37699943
             },
-            "06-gba": {
-              "value": 14343.38579657
-            },
-            "06-resto": {
+            "06": {
               "value": 14343.38579657
             },
             "02": {
               "value": 184.2027787
             }
           },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial; dato provisorio."
+          "note": "Dato provisorio."
         },
         {
           "period": "2025-H1",
@@ -803,17 +768,14 @@
             "94": {
               "value": 234.01497779
             },
-            "06-gba": {
-              "value": 14505.8110917
-            },
-            "06-resto": {
+            "06": {
               "value": 14505.8110917
             },
             "02": {
               "value": 184.97214052
             }
           },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial; dato provisorio."
+          "note": "Dato provisorio."
         },
         {
           "period": "2026-H1",
@@ -884,17 +846,14 @@
             "94": {
               "value": 292.20992207
             },
-            "06-gba": {
-              "value": 15965.48627299
-            },
-            "06-resto": {
+            "06": {
               "value": 15965.48627299
             },
             "02": {
               "value": 192.24353555
             }
           },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial; dato provisorio."
+          "note": "Dato provisorio."
         }
       ]
     },
@@ -969,17 +928,13 @@
             "94": {
               "value": -5.843446779984351
             },
-            "06-gba": {
-              "value": 3.144602384564532
-            },
-            "06-resto": {
+            "06": {
               "value": 3.144602384564532
             },
             "02": {
               "value": 8.832743940718668
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2018-H1",
@@ -1050,17 +1005,13 @@
             "94": {
               "value": 25.302109292304166
             },
-            "06-gba": {
-              "value": 9.095129529262525
-            },
-            "06-resto": {
+            "06": {
               "value": 9.095129529262525
             },
             "02": {
               "value": 0.5130625836884395
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2019-H1",
@@ -1131,17 +1082,13 @@
             "94": {
               "value": 31.980331426705334
             },
-            "06-gba": {
-              "value": 8.91757866438667
-            },
-            "06-resto": {
+            "06": {
               "value": 8.91757866438667
             },
             "02": {
               "value": 6.974400540211145
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2020-H1",
@@ -1212,17 +1159,13 @@
             "94": {
               "value": -15.525536695385977
             },
-            "06-gba": {
-              "value": -12.21514514267369
-            },
-            "06-resto": {
+            "06": {
               "value": -12.21514514267369
             },
             "02": {
               "value": -8.300856856140214
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2021-H1",
@@ -1293,17 +1236,13 @@
             "94": {
               "value": 23.477195743510993
             },
-            "06-gba": {
-              "value": 30.10031170841023
-            },
-            "06-resto": {
+            "06": {
               "value": 30.10031170841023
             },
             "02": {
               "value": -20.958197966624738
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2022-H1",
@@ -1374,17 +1313,13 @@
             "94": {
               "value": 48.2494003653295
             },
-            "06-gba": {
-              "value": 30.176066247283128
-            },
-            "06-resto": {
+            "06": {
               "value": 30.176066247283128
             },
             "02": {
               "value": 3.645476827569416
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2023-H1",
@@ -1455,17 +1390,13 @@
             "94": {
               "value": -36.60265198973831
             },
-            "06-gba": {
-              "value": -20.419416023601144
-            },
-            "06-resto": {
+            "06": {
               "value": -20.419416023601144
             },
             "02": {
               "value": 9.39756209979632
             }
-          },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial."
+          }
         },
         {
           "period": "2024-H1",
@@ -1536,17 +1467,14 @@
             "94": {
               "value": 33.097492591780785
             },
-            "06-gba": {
-              "value": 10.231868386892607
-            },
-            "06-resto": {
+            "06": {
               "value": 10.231868386892607
             },
             "02": {
               "value": 27.63168040824646
             }
           },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial; dato provisorio."
+          "note": "Dato provisorio."
         },
         {
           "period": "2025-H1",
@@ -1617,17 +1545,14 @@
             "94": {
               "value": 18.562435575475277
             },
-            "06-gba": {
-              "value": 1.1324055382296194
-            },
-            "06-resto": {
+            "06": {
               "value": 1.1324055382296194
             },
             "02": {
               "value": 0.41767112604365053
             }
           },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial; dato provisorio."
+          "note": "Dato provisorio."
         },
         {
           "period": "2026-H1",
@@ -1698,17 +1623,14 @@
             "94": {
               "value": 24.868042562738403
             },
-            "06-gba": {
-              "value": 10.062692613756719
-            },
-            "06-resto": {
+            "06": {
               "value": 10.062692613756719
             },
             "02": {
               "value": 3.931075787715055
             }
           },
-          "note": "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial; dato provisorio."
+          "note": "Dato provisorio."
         }
       ]
     }

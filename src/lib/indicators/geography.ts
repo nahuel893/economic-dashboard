@@ -60,6 +60,15 @@ export const AREAS: Area[] = [
 ];
 
 /**
+ * The 24 provinces, for sources that report Buenos Aires whole: every area
+ * that is a province keeps its id, and Buenos Aires is one place ("06")
+ * labeled where the rest of the province is, since the GBA partidos are small.
+ */
+export const PROVINCES: { id: string; name: string; label: LabelPoint }[] = AREAS.flatMap(({ id, name, province, label }) =>
+  province !== "06" ? [{ id, name, label }] : id === "06-resto" ? [{ id: "06", name: "Buenos Aires", label }] : [],
+);
+
+/**
  * First view of the map, as [[west, south], [east, north]]: mainland Argentina,
  * Isla Grande de Tierra del Fuego and the Malvinas, never the Antarctic sector.
  * Rounded outward from the bounds of public/geo/areas.json.

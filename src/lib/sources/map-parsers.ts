@@ -4,7 +4,7 @@
  * runtime loaders (maps.ts) and the EPH snapshot script (scripts/maps).
  */
 import { changeOverMonths } from "@/lib/indicators/calc";
-import { AGLOMERADOS, AREAS, REGIONS } from "@/lib/indicators/geography";
+import { AGLOMERADOS, AREAS, PROVINCES, REGIONS } from "@/lib/indicators/geography";
 import type { MapPeriod, MapSeries, MapValue } from "@/lib/indicators/map-data";
 import type { Point } from "@/lib/indicators/types";
 
@@ -162,24 +162,21 @@ export function parseOedeEmployment(
  * INDEC "Origen provincial de las exportaciones" (OPEX), sheet "Region-prov
  * 2016-2026 semestre": goods exports in millions of USD by province, for the
  * first half of each year. INDEC reports Buenos Aires as one province (the
- * city is its own row), so both map halves of the province take its total and
- * the period says so; nothing is split by guessing. Region, "Extranjero y
+ * city is its own row), so it is keyed "06" and the map fills the whole
+ * province with it; nothing is split by guessing. Region, "Extranjero y
  * plataforma continental" and "Indeterminado" rows have no province and are
  * left out, as is the grand total.
  */
 const OPEX_SPECIAL: Record<string, string[]> = {
-  "buenos aires": ["06-gba", "06-resto"],
+  "buenos aires": ["06"],
   "ciudad autonoma de buenos aires": ["02"],
   "tierra del fuego, antartida e islas del atlantico sur": ["94"],
 };
 
 const OPEX_AREAS = new Map<string, string[]>([
-  ...AREAS.filter((a) => a.province !== "06").map((a): [string, string[]] => [normalizeLabel(a.name), [a.id]]),
+  ...PROVINCES.filter((p) => p.id !== "06").map((p): [string, string[]] => [normalizeLabel(p.name), [p.id]]),
   ...Object.entries(OPEX_SPECIAL),
 ]);
-
-const OPEX_BUENOS_AIRES_NOTE =
-  "El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total provincial";
 
 /**
  * First-half exports by area, in millions of USD, and their year-on-year %
@@ -213,7 +210,7 @@ export function parseOpexSemesters(rows: Row[]): { total: MapSeries; yearOnYear:
       exports.set(area, byYear);
     }
   }
-  const missing = AREAS.find((a) => !exports.has(a.id));
+  const missing = PROVINCES.find((p) => !exports.has(p.id));
   if (missing) throw new Error(`OPEX: no row for ${missing.id}`);
 
   const toSeries = (valueOf: (byYear: Map<number, number>, year: number) => number | null): MapSeries => ({
@@ -224,8 +221,7 @@ export function parseOpexSemesters(rows: Row[]): { total: MapSeries; yearOnYear:
         if (value !== null) values[area] = { value };
       }
       if (!Object.keys(values).length) return [];
-      const notes = [OPEX_BUENOS_AIRES_NOTE, ...(provisional ? ["dato provisorio"] : [])];
-      return [{ period: `${year}-H1`, values, note: `${notes.join("; ")}.` }];
+      return [{ period: `${year}-H1`, values, ...(provisional ? { note: "Dato provisorio." } : {}) }];
     }),
   });
 

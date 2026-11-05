@@ -84,7 +84,7 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 | Inflation, monthly and year-on-year (INDEC) | The 6 INDEC regions | Monthly |
 | Unemployment rate (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
 | Activity and employment rates (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
-| Exports of goods, millions of USD or year-on-year % change (INDEC, OPEX) | Provinces; INDEC reports Buenos Aires as one province, so both of its halves show the same total | First half of each year (provisional for the latest years) |
+| Exports of goods, millions of USD or year-on-year % change (INDEC, OPEX) | Provinces; INDEC reports Buenos Aires as one province, so the map fills it whole with one value | First half of each year (provisional for the latest years) |
 | Census 2022: population and density, inhabitants per km² (INDEC) | The 527 departments, partidos and comunas | Fixed (2022) |
 
 - Each value is shown where its source measures it: INDEC publishes poverty and the labor rates only for urban areas, never by province, so they are points. Survey estimates with a coefficient of variation above 16 % carry a "usar con cuidado" mark.

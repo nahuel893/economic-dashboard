@@ -8,7 +8,7 @@
 import { formatCompact, formatMonth, type Unit } from "@/lib/format";
 import { SOURCE_NAMES } from "@/lib/sources/citations";
 import departmentPlaces from "@/lib/sources/snapshots/department-places.json";
-import { AGLOMERADOS, AREAS, REGIONS, type AreaId, type LabelPoint } from "./geography";
+import { AGLOMERADOS, AREAS, PROVINCES, REGIONS, type AreaId, type LabelPoint } from "./geography";
 import type { MapSeries } from "./map-data";
 
 export type MapKpiId =
@@ -23,7 +23,7 @@ export type MapKpiId =
   | "censo";
 
 /** Where values are drawn: area fills, area fills by region, aglomerado points, or department fills. */
-export type MapGeometry = "areas" | "regions" | "aglomerados" | "departments";
+export type MapGeometry = "areas" | "provinces" | "regions" | "aglomerados" | "departments";
 
 export type MapVariant = {
   /** URL value (`?valor=`). */
@@ -196,7 +196,7 @@ export const MAP_KPIS: MapKpi[] = [
   {
     id: "exportaciones",
     label: "Exportaciones",
-    geometry: "areas",
+    geometry: "provinces",
     unit: "usdMillions",
     source: SOURCE_NAMES.indecOpex,
     variants: [
@@ -384,6 +384,7 @@ const DEPARTMENTS: BasePlace[] = (departmentPlaces as { id: string; name: string
 function placesOf(geometry: MapGeometry): BasePlace[] {
   if (geometry === "departments") return DEPARTMENTS;
   if (geometry === "areas") return AREAS.map(({ id, name, label }) => ({ id, name, labelAt: label }));
+  if (geometry === "provinces") return PROVINCES.map(({ id, name, label }) => ({ id, name, labelAt: label }));
   if (geometry === "regions") return REGIONS.map(({ id, name, label }) => ({ id, name, labelAt: label }));
   return [...AGLOMERADOS]
     .sort((a, b) => Number(DRAWN_UNDER.has(b.code)) - Number(DRAWN_UNDER.has(a.code)))
@@ -392,7 +393,9 @@ function placesOf(geometry: MapGeometry): BasePlace[] {
 
 function areaPlaceOf(geometry: MapGeometry): Record<AreaId, string> {
   if (geometry === "aglomerados" || geometry === "departments") return {};
-  return Object.fromEntries(AREAS.map((area) => [area.id, geometry === "regions" ? area.region : area.id]));
+  const placeOf = (area: (typeof AREAS)[number]) =>
+    geometry === "regions" ? area.region : geometry === "provinces" ? (area.province === "06" ? "06" : area.id) : area.id;
+  return Object.fromEntries(AREAS.map((area) => [area.id, placeOf(area)]));
 }
 
 /** The selected period's values joined to their places and colored; null when the variant has no data. */

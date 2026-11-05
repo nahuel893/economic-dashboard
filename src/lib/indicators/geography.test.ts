@@ -1,7 +1,7 @@
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { AREAS, MAP_BOUNDS, REGIONS } from "./geography";
+import { AREAS, MAP_BOUNDS, PROVINCES, REGIONS } from "./geography";
 
 type Position = [number, number];
 type Geometry =
@@ -44,6 +44,19 @@ function contains(geometry: Geometry, [x, y]: Position): boolean {
 }
 
 const areaGeometry = (id: string) => areas.find((f) => f.properties.id === id)!.geometry;
+
+describe("PROVINCES", () => {
+  it("lists every province once, with Buenos Aires whole and labeled where its rest of the province is", () => {
+    expect(PROVINCES).toHaveLength(24);
+    expect(new Set(PROVINCES.map((p) => p.id)).size).toBe(24);
+    expect(PROVINCES.find((p) => p.id === "06")).toEqual({
+      id: "06",
+      name: "Buenos Aires",
+      label: AREAS.find((a) => a.id === "06-resto")!.label,
+    });
+    expect(PROVINCES.find((p) => p.id === "14")).toEqual({ id: "14", name: "Córdoba", label: AREAS.find((a) => a.id === "14")!.label });
+  });
+});
 
 describe("label points", () => {
   it("puts each area's label inside that area", () => {

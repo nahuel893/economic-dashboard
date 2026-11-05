@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 
 const GEOMETRY_NOTES: Record<MapView["geometry"], string> = {
   areas: "Cada provincia con su valor; Buenos Aires se divide en los partidos del Gran Buenos Aires y el resto de la provincia.",
+  provinces: "Cada provincia con su valor; la fuente informa Buenos Aires como una sola provincia, sin dividir el Gran Buenos Aires.",
   regions: "Cada provincia toma el valor de su región: el INDEC publica el IPC por región, no por provincia.",
   aglomerados:
     "Cada punto es un aglomerado urbano de la EPH: el INDEC no publica este dato por provincia ni fuera de las ciudades.",

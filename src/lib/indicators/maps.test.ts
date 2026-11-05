@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formatNumber, formatValue } from "@/lib/format";
-import { AGLOMERADOS, AREAS, REGIONS } from "./geography";
+import { AGLOMERADOS, AREAS, PROVINCES, REGIONS } from "./geography";
 import type { MapSeries } from "./map-data";
 import {
   areaColors,
@@ -57,7 +57,7 @@ describe("MAP_KPIS", () => {
       ["inflacion", "regions", "percent"],
       ["desocupacion", "aglomerados", "percent"],
       ["actividad", "aglomerados", "percent"],
-      ["exportaciones", "areas", "usdMillions"],
+      ["exportaciones", "provinces", "usdMillions"],
       ["censo", "departments", "count"],
     ]);
   });
@@ -251,6 +251,18 @@ describe("buildMapView", () => {
     expect(view("variacion").places.find((p) => p.id === "14")!.label).toBe("9,3 %");
     expect(view("variacion").places.find((p) => p.id === "58")!.label).toBeNull();
     expect(mapHref("exportaciones", "variacion", "2026-H1")).toBe("/mapas?kpi=exportaciones&valor=variacion&periodo=2026-s1");
+  });
+
+  it("draws a province-level KPI with Buenos Aires as one place filling both of its areas, with one label", () => {
+    const view = buildMapView(resolveMapSelection({ kpi: "exportaciones" }, periodsOf), {
+      total: series([{ period: "2026-H1", values: { "06": { value: 15_965.49 }, "14": { value: 5_601.31 } } }]),
+    })!;
+    expect(view.places).toHaveLength(PROVINCES.length);
+    expect(view.places.filter((p) => p.label !== null).map((p) => p.id).sort()).toEqual(["06", "14"]);
+    expect(view.places.find((p) => p.id === "06")).toMatchObject({ name: "Buenos Aires", labelAt: AREAS.find((a) => a.id === "06-resto")!.label });
+    expect(view.areaPlace).toMatchObject({ "06-gba": "06", "06-resto": "06", "14": "14", "02": "02" });
+    const colors = areaColors(view);
+    expect(colors["06-gba"]).toBe(colors["06-resto"]);
   });
 
   it("labels regions at the region's label point and aglomerados at their own point", () => {

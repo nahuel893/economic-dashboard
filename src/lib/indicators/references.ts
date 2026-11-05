@@ -280,7 +280,7 @@ export function mapsReferences(): Reference[] {
         url,
       })),
       update: "Copiado en el tablero desde el informe del INDEC, que lo publica cada semestre: el primer semestre en septiembre y el año completo en marzo; el mapa usa el primer semestre.",
-      note: "Los datos de los últimos años son provisorios. El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total. Se excluyen las exportaciones de origen indeterminado y las del extranjero y la plataforma continental. La variación interanual la calcula este tablero.",
+      note: "Los datos de los últimos años son provisorios. El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad, y el mapa la pinta entera con ese valor. Se excluyen las exportaciones de origen indeterminado y las del extranjero y la plataforma continental. La variación interanual la calcula este tablero.",
     },
     {
       ...base.indecCenso,

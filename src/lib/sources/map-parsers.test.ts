@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { AGLOMERADOS, AREAS } from "@/lib/indicators/geography";
+import { AGLOMERADOS, AREAS, PROVINCES } from "@/lib/indicators/geography";
 import opexRows from "./__fixtures__/opex-semesters.json";
 import {
   ephPovertySeries,
@@ -374,16 +374,16 @@ describe("parseOpexSemesters", () => {
     expect(at(total, "2016-H1").values["58"].value).toBeCloseTo(48.13, 2);
   });
 
-  it("gives both halves of Buenos Aires the province total, with a note, since INDEC does not split it", () => {
+  it("keeps Buenos Aires as one province, keyed by its province code, since INDEC does not split it", () => {
     const period = at(total, "2026-H1");
-    expect(period.values["06-gba"].value).toBeCloseTo(15965.49, 2);
-    expect(period.values["06-resto"]).toEqual(period.values["06-gba"]);
-    expect(period.note).toMatch(/Buenos Aires/);
+    expect(period.values["06"].value).toBeCloseTo(15965.49, 2);
+    expect(period.values["06-gba"]).toBeUndefined();
+    expect(period.values["06-resto"]).toBeUndefined();
   });
 
-  it("leaves out the totals, regions, foreign and undetermined rows and covers every area", () => {
+  it("leaves out the totals, regions, foreign and undetermined rows and covers every province", () => {
     const ids = Object.keys(at(total, "2026-H1").values).sort();
-    expect(ids).toEqual(AREAS.map((a) => a.id).sort());
+    expect(ids).toEqual(PROVINCES.map((p) => p.id).sort());
   });
 
   it("flags provisional years and not the final ones", () => {
@@ -394,7 +394,7 @@ describe("parseOpexSemesters", () => {
   it("computes the year-on-year change against the same half of the previous year", () => {
     expect(yearOnYear.periods[0].period).toBe("2017-H1");
     expect(at(yearOnYear, "2026-H1").values["14"].value).toBeCloseTo((5601.3123683 / 5124.3332041 - 1) * 100, 1);
-    expect(at(yearOnYear, "2026-H1").values["06-resto"].value).toBeCloseTo((15965.48627299 / 14505.8110917 - 1) * 100, 1);
+    expect(at(yearOnYear, "2026-H1").values["06"].value).toBeCloseTo((15965.48627299 / 14505.8110917 - 1) * 100, 1);
   });
 
   it("fails on a province it cannot place", () => {

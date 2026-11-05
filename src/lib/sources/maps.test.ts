@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AGLOMERADOS, AREAS } from "@/lib/indicators/geography";
+import { AGLOMERADOS, PROVINCES } from "@/lib/indicators/geography";
 import departmentPlaces from "./snapshots/department-places.json";
 
 const { cacheLife, fetchJson } = vi.hoisted(() => ({ cacheLife: vi.fn(), fetchJson: vi.fn() }));
@@ -183,7 +183,7 @@ describe("map loaders", () => {
     expect(periods.at(-1)).toMatch(/^\d{4}-H1$/);
     expect(periods).toEqual([...periods].sort());
     expect(yearOnYear.periods.map((p) => p.period)).toEqual(periods.slice(1));
-    const known = AREAS.map((a) => a.id);
+    const known = PROVINCES.map((p) => p.id);
     for (const { values } of total.periods) {
       expect(Object.keys(values).sort()).toEqual([...known].sort());
       for (const { value } of Object.values(values)) expect(value).toBeGreaterThan(0);
