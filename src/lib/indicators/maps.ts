@@ -10,7 +10,7 @@ import { SOURCE_NAMES } from "@/lib/sources/citations";
 import { AGLOMERADOS, AREAS, REGIONS, type AreaId } from "./geography";
 import type { MapSeries } from "./map-data";
 
-export type MapKpiId = "salarios" | "pobreza" | "inflacion" | "desocupacion";
+export type MapKpiId = "salarios" | "pobreza" | "inflacion" | "desocupacion" | "actividad";
 
 /** Where values are drawn: area fills, area fills by region, or aglomerado points. */
 export type MapGeometry = "areas" | "regions" | "aglomerados";
@@ -103,6 +103,27 @@ export const MAP_KPIS: MapKpi[] = [
         label: "Tasa de desocupación",
         series: "unemployment",
         description: "Personas desocupadas como porcentaje de la población económicamente activa.",
+      },
+    ],
+  },
+  {
+    id: "actividad",
+    label: "Actividad y empleo",
+    geometry: "aglomerados",
+    unit: "percent",
+    source: SOURCE_NAMES.indecEph,
+    variants: [
+      {
+        slug: "actividad",
+        label: "Tasa de actividad",
+        series: "activity",
+        description: "Población económicamente activa (ocupados y desocupados) como porcentaje de la población total.",
+      },
+      {
+        slug: "empleo",
+        label: "Tasa de empleo",
+        series: "employment",
+        description: "Población ocupada como porcentaje de la población total.",
       },
     ],
   },

@@ -6,6 +6,7 @@ import { SOURCE_NAMES, type SourceId } from "@/lib/sources/citations";
 import { BCRA_VARIABLES, INDEC_SERIES } from "@/lib/sources/clients";
 import { IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
 import povertySnapshot from "@/lib/sources/snapshots/eph-poverty.json";
+import ratesSnapshot from "@/lib/sources/snapshots/eph-rates.json";
 import unemploymentSnapshot from "@/lib/sources/snapshots/eph-unemployment.json";
 import { REGIONS } from "./geography";
 import { MACRO_SOURCES } from "./macro";
@@ -188,7 +189,7 @@ export function historyReferences(): Reference[] {
 /** The last segment of a file URL, as the detail of its reference item. */
 const fileName = (url: string) => url.slice(url.lastIndexOf("/") + 1);
 
-/** References of "Mapas", in the order of its indicators: wages, poverty and unemployment, inflation. */
+/** References of "Mapas", in the order of its indicators: wages, poverty and the labor rates, inflation. */
 export function mapsReferences(): Reference[] {
   return [
     {
@@ -216,8 +217,13 @@ export function mapsReferences(): Reference[] {
           detail: fileName(url),
           url,
         })),
+        ...ratesSnapshot.sources.map((url) => ({
+          label: "Tasas de actividad y de empleo por aglomerado (cuadros 1.6 y 1.7)",
+          detail: fileName(url),
+          url,
+        })),
       ],
-      update: "Copiados en el tablero desde cada informe del INDEC: la pobreza se publica cada semestre y la desocupación, cada trimestre.",
+      update: "Copiados en el tablero desde cada informe del INDEC: la pobreza se publica cada semestre y la desocupación y las tasas de actividad y de empleo, cada trimestre.",
       note: "El INDEC no publica estos datos por provincia, sino por aglomerado urbano. Los valores con coeficiente de variación mayor al 16 % se marcan para usar con cuidado.",
     },
     {

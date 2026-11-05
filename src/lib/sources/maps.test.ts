@@ -7,7 +7,7 @@ vi.mock("next/cache", () => ({ cacheLife }));
 vi.mock("./http", () => ({ fetchJson }));
 
 import { CACHE } from "./clients";
-import { getEphPovertyMap, getRegionalInflationMap, getUnemploymentMap, getWageMap, IPC_REGION_SERIES, WAGES_URL } from "./maps";
+import { getEphPovertyMap, getLaborRatesMap, getRegionalInflationMap, getUnemploymentMap, getWageMap, IPC_REGION_SERIES, WAGES_URL } from "./maps";
 
 const workbook = readFileSync(new URL("./__fixtures__/oede-wages.xlsx", import.meta.url));
 const INDEX_URL = "https://www.argentina.gob.ar/node/142211";
@@ -94,5 +94,28 @@ describe("map loaders", () => {
       }
     }
     expect(poverty.povertyPersons.periods.at(-1)?.values["32"]).toMatchObject({ value: expect.any(Number), cv: expect.any(Number) });
+  });
+
+  it("loads the activity and employment rates by aglomerado over the same quarters as unemployment", async () => {
+    const known = new Set(AGLOMERADOS.map((a) => a.code));
+    const { activity, employment } = await getLaborRatesMap();
+    const { periods } = await getUnemploymentMap();
+    for (const series of [activity, employment]) {
+      expect(series.periods.map((p) => p.period)).toEqual(periods.map((p) => p.period));
+      for (const { values } of series.periods) {
+        for (const [code, cell] of Object.entries(values)) {
+          expect(known).toContain(code);
+          expect(cell.value).toBeGreaterThan(20);
+          expect(cell.value).toBeLessThan(80);
+        }
+      }
+    }
+    // Employment is a share of the same population as activity, so it never exceeds it.
+    for (const [i, { values }] of employment.periods.entries()) {
+      for (const [code, cell] of Object.entries(values)) {
+        const rate = activity.periods[i].values[code]?.value;
+        if (rate !== undefined) expect(cell.value).toBeLessThanOrEqual(rate);
+      }
+    }
   });
 });

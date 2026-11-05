@@ -12,6 +12,7 @@ import { fetchJson } from "./http";
 import { findWageWorkbookUrl, parseOedeWages, type PovertySeries, regionalInflation } from "./map-parsers";
 import { parseDatosSeries } from "./parsers";
 import povertySnapshot from "./snapshots/eph-poverty.json";
+import ratesSnapshot from "./snapshots/eph-rates.json";
 import unemploymentSnapshot from "./snapshots/eph-unemployment.json";
 
 /** Months of history each monthly map keeps. */
@@ -88,3 +89,6 @@ export const getEphPovertyMap = async () => povertySnapshot.series as PovertySer
 
 /** Unemployment rate by aglomerado, %, quarterly (INDEC EPH). */
 export const getUnemploymentMap = async () => unemploymentSnapshot.series.unemployment as MapSeries;
+
+/** Activity and employment rates by aglomerado, % of the population, quarterly (INDEC EPH; no CV is published). */
+export const getLaborRatesMap = async () => ratesSnapshot.series as { activity: MapSeries; employment: MapSeries };

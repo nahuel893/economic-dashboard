@@ -81,12 +81,13 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 | Poverty and indigence, % of persons or households (INDEC, EPH) | The 31 EPH urban areas as points | Half-yearly |
 | Inflation, monthly and year-on-year (INDEC) | The 6 INDEC regions | Monthly |
 | Unemployment rate (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
+| Activity and employment rates (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
 
-- Each value is shown where its source measures it: INDEC publishes poverty and unemployment only for urban areas, never by province, so they are points. Survey estimates with a coefficient of variation above 16 % carry a "usar con cuidado" mark.
+- Each value is shown where its source measures it: INDEC publishes poverty and the labor rates only for urban areas, never by province, so they are points. Survey estimates with a coefficient of variation above 16 % carry a "usar con cuidado" mark.
 - Hover or tap a place for its value, period and source; a table under the map lists the same values.
 - The Malvinas, the other South Atlantic islands and the Antarctic sector are drawn as outlines with the map's own "Islas Malvinas" label.
 - Ctrl + wheel (or two fingers) moves the map, so it never takes over the page scroll.
-- The boundaries come from IGN through georef and are rebuilt with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/geo/build-geo.mjs`. EPH poverty and unemployment are committed snapshots: refresh them after each INDEC release with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/eph-snapshots.mts`.
+- The boundaries come from IGN through georef and are rebuilt with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/geo/build-geo.mjs`. EPH poverty, unemployment, activity and employment are committed snapshots: refresh them after each INDEC release with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/eph-snapshots.mts`.
 
 ## Data sources
 
@@ -98,7 +99,7 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 | [BCRA, Estadísticas v4](https://www.bcra.gob.ar/en/central-bank-api-catalog/) | Reserves, money, rates, REM, indexes, exchange-rate band |
 | [BYMA open data](https://open.bymadata.com.ar) | Merval |
 | [OEDE, Ministerio de Capital Humano](https://www.argentina.gob.ar/node/142211) | Wages by province (Mapas) |
-| [INDEC, EPH](https://www.indec.gob.ar) | Poverty, indigence and unemployment by urban area (Mapas) |
+| [INDEC, EPH](https://www.indec.gob.ar) | Poverty, indigence, unemployment, activity and employment by urban area (Mapas) |
 | [IGN via georef](https://datosgobar.github.io/georef-ar-api/) and [OpenFreeMap](https://openfreemap.org) | Boundaries and basemap (Mapas) |
 
 Every card and chart cites its source by name, linked to the full references at the bottom of the page: endpoints, BCRA variable numbers, INDEC series ids and how often each one is queried (`src/lib/indicators/references.ts`).
