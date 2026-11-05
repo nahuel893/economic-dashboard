@@ -52,6 +52,16 @@ export const AREAS: Area[] = [
   { id: "94", name: "Tierra del Fuego", province: "94", region: "Patagonia" },
 ];
 
+/**
+ * First view of the map, as [[west, south], [east, north]]: mainland Argentina,
+ * Isla Grande de Tierra del Fuego and the Malvinas, never the Antarctic sector.
+ * Rounded outward from the bounds of public/geo/areas.json.
+ */
+export const MAP_BOUNDS: [[number, number], [number, number]] = [
+  [-73.6, -55.1],
+  [-53.6, -21.7],
+];
+
 /** The 24 partidos INDEC counts as Gran Buenos Aires, as named by georef. */
 export const GBA_PARTIDOS = [
   "Almirante Brown",
