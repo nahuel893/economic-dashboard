@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { labelFits, MARK_LAYERS, parseMarks, serializeMarks, spansOnAxis, type Span } from "./marks";
+import { labelFits, MARK_LAYERS, parseMarks, placeAgain, serializeMarks, spansOnAxis, type Span } from "./marks";
 
 describe("parseMarks", () => {
   it("keeps known layers once, ignoring unknown ones", () => {
@@ -57,5 +57,19 @@ describe("labelFits", () => {
     expect(labelFits("Milei", 50)).toBe(true);
     expect(labelFits("A. Fernández", 50)).toBe(false);
     expect(labelFits("A. Fernández", 90)).toBe(true);
+  });
+});
+
+describe("placeAgain", () => {
+  const dates = ["2015-01-01", "2016-01-01", "2017-01-01", "2018-01-01", "2019-01-01", "2020-01-01"];
+  const placed = spansOnAxis(MARK_LAYERS[0].spans.slice(2, 5), dates).map((span) => ({ ...span, layer: "presidencias" as const, row: 0 }));
+
+  it("snaps the spans to the visible dates, keeping their shading and extra fields", () => {
+    const zoomed = placeAgain(placed, dates.slice(1, 4));
+    expect(zoomed.map((s) => [s.label, s.x1, s.x2, s.edge])).toEqual([
+      ["Macri", "2016-01-01", "2018-01-01", false],
+    ]);
+    expect(zoomed[0].shade).toBe(placed.find((s) => s.label === "Macri")!.shade);
+    expect(zoomed[0]).toMatchObject({ layer: "presidencias", row: 0 });
   });
 });

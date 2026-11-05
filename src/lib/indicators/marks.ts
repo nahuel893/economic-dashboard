@@ -87,3 +87,11 @@ export function spansOnAxis(spans: Span[], dates: string[]): AxisSpan[] {
 /** The span a date falls in, if any. */
 export const spanAt = (spans: Span[], date: string) =>
   spans.find((span) => date >= span.from && (span.to === null || date < span.to));
+
+/**
+ * Spans already placed on an axis, placed again on a subset of its dates (a
+ * zoomed chart). Each keeps its shading, so bands do not swap shades on zoom.
+ */
+export function placeAgain<T extends AxisSpan>(spans: T[], dates: string[]): T[] {
+  return spans.flatMap((span) => spansOnAxis([span], dates).map((placed) => ({ ...span, ...placed, shade: span.shade })));
+}

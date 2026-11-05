@@ -2,11 +2,12 @@
 
 import { useId, useRef, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
+import { useZoomDrag, ZoomBar, ZoomSlider } from "@/components/dashboard/chart-zoom";
 import { SourceCitation } from "@/components/dashboard/source-citation";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { formatAxisValue, formatChange, formatDate, formatMonth, formatMonthShort, formatValue, type Unit } from "@/lib/format";
-import { logTicks, periodTicks, type Granularity, type MonthRange } from "@/lib/indicators/history";
-import { labelFits, spanAt, type AxisSpan, type MarkLayerKey } from "@/lib/indicators/marks";
+import { linearTicks, logTicks, periodTicks, type Granularity, type MonthRange } from "@/lib/indicators/history";
+import { labelFits, placeAgain, spanAt, type AxisSpan, type MarkLayerKey } from "@/lib/indicators/marks";
 import { videoFileName } from "@/lib/indicators/series-animation";
 import type { Point } from "@/lib/indicators/types";
 import type { VideoSeries } from "./series-video";
@@ -20,7 +21,7 @@ export type HistorySummary = {
   change: number | null;
 };
 
-import type { AxisLabels } from "@/lib/indicators/zoom";
+import { axisLabelsFor, inWindow, type AxisLabels, type ZoomWindow } from "@/lib/indicators/zoom";
 export type { AxisLabels };
 
 /** A span of an active mark layer; `row` stacks the labels of different layers. */
@@ -80,7 +81,18 @@ const CLOSE_LABEL: Record<Granularity, string | null> = {
 };
 
 export function HistoryChart(props: HistoryChartProps) {
-  const { label, description, unit, frequency, granularity, axis, change, points, marks, summary, source } = props;
+  const { label, description, unit, frequency, granularity, change, summary, source } = props;
+  const keys = props.points.map((p) => p.date);
+  // The zoom belongs to the selected period: choosing another period starts unzoomed.
+  const rangeKey = `${props.range.from}:${props.range.to}`;
+  const [zoomState, setZoomState] = useState<{ range: string; window: ZoomWindow | null }>({ range: rangeKey, window: null });
+  const zoom = zoomState.range === rangeKey ? zoomState.window : null;
+  const setZoom = (window: ZoomWindow | null) => setZoomState({ range: rangeKey, window });
+  const zoomDrag = useZoomDrag(keys, setZoom);
+  // Everything below draws the visible points, so the scale and the labels fit the zoom.
+  const points = inWindow(props.points, (p) => p.date, zoom);
+  const axis = zoom && points.length ? axisLabelsFor(points[0].date, points.at(-1)!.date) : props.axis;
+  const marks = zoom ? placeAgain(props.marks, points.map((p) => p.date)) : props.marks;
   const id = useId();
   const article = useRef<HTMLElement>(null);
   const canUseLog = props.logScale && points.every((p) => p.value > 0);
@@ -91,7 +103,9 @@ export function HistoryChart(props: HistoryChartProps) {
   const values = points.map((p) => p.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const ticks = log ? logTicks(min, max) : undefined;
+  // Zoomed linear charts fit the visible range tightly (the library would anchor them at zero);
+  // unzoomed ones keep the library's rounded domain.
+  const ticks = log ? logTicks(min, max) : zoom ? linearTicks(min, max, 5) : undefined;
   // Years and months are labelled once, where they start; days use the library's spacing.
   const xTicks = axis === "day" ? undefined : periodTicks(points.map((p) => p.date), axis, 8);
   const closeLabel = frequency === "daily" ? CLOSE_LABEL[granularity] : null;
@@ -150,82 +164,94 @@ export function HistoryChart(props: HistoryChartProps) {
       </div>
 
       {points.length > 1 ? (
-        <ChartContainer config={config} className="aspect-auto h-56 w-full min-w-0" initialDimension={{ width: 300, height: 224 }}>
-          <LineChart data={points} margin={{ top: 8 + markRows * MARK_ROW, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid vertical={false} stroke="var(--border)" />
-            {marks.map((mark) => (
-              <ReferenceArea
-                key={`${mark.layer}-${mark.from}`}
-                x1={mark.x1}
-                x2={mark.x2}
-                fill="var(--foreground)"
-                fillOpacity={mark.shade ? 0.07 : 0.025}
-                ifOverflow="hidden"
-                label={markLabel(mark.label, mark.row)}
-              />
-            ))}
-            {marks
-              .filter((mark) => mark.edge)
-              .map((mark) => (
-                <ReferenceLine
-                  key={`${mark.layer}-${mark.from}-edge`}
-                  x={mark.x1}
-                  stroke="var(--muted-foreground)"
-                  strokeOpacity={0.6}
-                  strokeDasharray="3 3"
+        <div {...zoomDrag.containerProps}>
+          <ChartContainer config={config} className="aspect-auto h-56 w-full min-w-0" initialDimension={{ width: 300, height: 224 }}>
+            <LineChart data={points} margin={{ top: 8 + markRows * MARK_ROW, right: 8, bottom: 0, left: 0 }} {...zoomDrag.chartProps}>
+              <CartesianGrid vertical={false} stroke="var(--border)" />
+              {marks.map((mark) => (
+                <ReferenceArea
+                  key={`${mark.layer}-${mark.from}`}
+                  x1={mark.x1}
+                  x2={mark.x2}
+                  fill="var(--foreground)"
+                  fillOpacity={mark.shade ? 0.07 : 0.025}
+                  ifOverflow="hidden"
+                  label={markLabel(mark.label, mark.row)}
                 />
               ))}
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              minTickGap={32}
-              ticks={xTicks}
-              interval={xTicks ? 0 : "preserveEnd"}
-              tick={{ fontSize: 11 }}
-              tickFormatter={(d: string) => formatTick(d, axis)}
-            />
-            <YAxis
-              width={76}
-              tickLine={false}
-              axisLine={false}
-              tick={{ fontSize: 11 }}
-              scale={log ? "log" : "auto"}
-              domain={log ? [min, max] : ["auto", "auto"]}
-              ticks={ticks}
-              allowDataOverflow={log}
-              tickFormatter={(v: number) => formatAxisValue(v, unit)}
-            />
-            <Tooltip
-              cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1, strokeDasharray: "3 3" }}
-              content={({ active, payload }) => {
-                const point = payload?.[0]?.payload as Point | undefined;
-                if (!active || !point) return null;
-                return (
-                  <div className="flex flex-col gap-0.5 rounded-md border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-sm">
-                    <span className="text-muted-foreground">
-                      {closeLabel ? `${closeLabel} ` : ""}
-                      {pointDate(point.date)}
-                    </span>
-                    <span className="font-medium">{formatValue(point.value, unit)}</span>
-                    {layers.map((layer) => {
-                      const span = spanAt(marks.filter((m) => m.layer === layer), point.date);
-                      return span ? (
-                        <span key={layer} className="text-muted-foreground">
-                          {span.name}
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
-                );
-              }}
-            />
-            <Line type="linear" dataKey="value" stroke="var(--tone)" strokeWidth={2} dot={false} isAnimationActive={false} />
-          </LineChart>
-        </ChartContainer>
+              {marks
+                .filter((mark) => mark.edge)
+                .map((mark) => (
+                  <ReferenceLine
+                    key={`${mark.layer}-${mark.from}-edge`}
+                    x={mark.x1}
+                    stroke="var(--muted-foreground)"
+                    strokeOpacity={0.6}
+                    strokeDasharray="3 3"
+                  />
+                ))}
+              {zoomDrag.selection ? (
+                <ReferenceArea x1={zoomDrag.selection.start} x2={zoomDrag.selection.end} fill="var(--tone)" fillOpacity={0.18} />
+              ) : null}
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                minTickGap={32}
+                ticks={xTicks}
+                interval={xTicks ? 0 : "preserveEnd"}
+                tick={{ fontSize: 11 }}
+                tickFormatter={(d: string) => formatTick(d, axis)}
+              />
+              <YAxis
+                width={76}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
+                scale={log ? "log" : "auto"}
+                domain={log || zoom ? [min, max] : ["auto", "auto"]}
+                ticks={ticks}
+                allowDataOverflow={log}
+                tickFormatter={(v: number) => formatAxisValue(v, unit)}
+              />
+              <Tooltip
+                cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1, strokeDasharray: "3 3" }}
+                content={({ active, payload }) => {
+                  const point = payload?.[0]?.payload as Point | undefined;
+                  if (!active || !point) return null;
+                  return (
+                    <div className="flex flex-col gap-0.5 rounded-md border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-sm">
+                      <span className="text-muted-foreground">
+                        {closeLabel ? `${closeLabel} ` : ""}
+                        {pointDate(point.date)}
+                      </span>
+                      <span className="font-medium">{formatValue(point.value, unit)}</span>
+                      {layers.map((layer) => {
+                        const span = spanAt(marks.filter((m) => m.layer === layer), point.date);
+                        return span ? (
+                          <span key={layer} className="text-muted-foreground">
+                            {span.name}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  );
+                }}
+              />
+              <Line type="linear" dataKey="value" stroke="var(--tone)" strokeWidth={2} dot={false} isAnimationActive={false} />
+            </LineChart>
+          </ChartContainer>
+        </div>
       ) : (
         <p className="py-16 text-center text-sm text-muted-foreground">No hay datos en este período.</p>
       )}
+
+      {props.points.length > 1 ? (
+        <div className="flex flex-col gap-2">
+          <ZoomSlider keys={keys} window={zoom} onChange={setZoom} format={pointDate} />
+          <ZoomBar window={zoom} onReset={() => setZoom(null)} format={pointDate} />
+        </div>
+      ) : null}
 
       <dl className="grid grid-cols-3 gap-2 text-xs">
         <div className="flex flex-col">
