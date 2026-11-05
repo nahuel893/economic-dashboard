@@ -14,19 +14,19 @@ The UI is in Spanish (`es-AR`).
 
 ## Quick start
 
-Requires Node 24.
+Requires Node 24 and pnpm.
 
 ```bash
-npm install
-npm run dev        # http://localhost:3000
+pnpm install
+pnpm dev            # http://localhost:3000
 ```
 
 | Command | What it does |
 |---------|--------------|
-| `npm run dev` | Development server |
-| `npm run build && npm start` | Production build and server |
-| `npm test` | Unit tests (parsers, statistics, history windows) |
-| `npm run lint` | ESLint |
+| `pnpm dev` | Development server |
+| `pnpm build && pnpm start` | Production build and server |
+| `pnpm test` | Unit tests (parsers, statistics, history windows) |
+| `pnpm lint` | ESLint |
 
 No environment variables are needed: every source is a free, public API.
 
