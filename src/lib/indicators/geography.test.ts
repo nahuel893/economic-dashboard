@@ -1,7 +1,7 @@
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { AREAS, MAP_BOUNDS } from "./geography";
+import { AREAS, MAP_BOUNDS, REGIONS } from "./geography";
 
 type Position = [number, number];
 type Geometry =
@@ -23,6 +23,36 @@ const positions = (geometry: Geometry): Position[] =>
       : geometry.coordinates.flat(2);
 const latitudes = (features: Feature[]) => features.flatMap((f) => positions(f.geometry).map(([, lat]) => lat));
 const longitudes = (features: Feature[]) => features.flatMap((f) => positions(f.geometry).map(([lon]) => lon));
+
+/** Ray casting over every ring: inside an odd number of rings means inside the area (holes count as rings). */
+function contains(geometry: Geometry, [x, y]: Position): boolean {
+  if (geometry.type === "Point") return false;
+  const rings = geometry.type === "Polygon" ? geometry.coordinates : geometry.coordinates.flat();
+  let inside = false;
+  for (const ring of rings) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i];
+      const [xj, yj] = ring[j];
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+  }
+  return inside;
+}
+
+const areaGeometry = (id: string) => areas.find((f) => f.properties.id === id)!.geometry;
+
+describe("label points", () => {
+  it("puts each area's label inside that area", () => {
+    for (const area of AREAS) expect(contains(areaGeometry(area.id), area.label), area.id).toBe(true);
+  });
+
+  it("puts each region's label inside one of its areas", () => {
+    for (const region of REGIONS) {
+      const own = AREAS.filter((a) => a.region === region.id);
+      expect(own.some((a) => contains(areaGeometry(a.id), region.label)), region.id).toBe(true);
+    }
+  });
+});
 
 describe("areas.json", () => {
   it("has exactly one polygon feature per map area, named like AREAS", () => {

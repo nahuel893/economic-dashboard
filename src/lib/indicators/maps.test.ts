@@ -182,6 +182,32 @@ describe("buildMapView", () => {
     expect(formatValue(1234567, "count")).toBe(formatNumber(1234567));
   });
 
+  it("labels each place with its short value at its label point, and no label without data", () => {
+    const view = buildMapView(resolveMapSelection({ kpi: "salarios" }, periodsOf), {
+      level: series([{ period: "2026-06", values: { "02": { value: 2_761_629 } } }]),
+    })!;
+    const city = view.places.find((p) => p.id === "02")!;
+    expect(city.label).toBe("$ 2,76 M");
+    expect(city.labelAt).toEqual(AREAS.find((a) => a.id === "02")!.label);
+    expect(view.places.find((p) => p.id === "94")!.label).toBeNull();
+  });
+
+  it("labels regions at the region's label point and aglomerados at their own point", () => {
+    const inflation = buildMapView(resolveMapSelection({ kpi: "inflacion" }, periodsOf), {
+      monthly: series([{ period: "2026-08", values: { Cuyo: { value: 2.34 } } }]),
+      yearOnYear: series([{ period: "2026-08", values: { Cuyo: { value: 33.4 } } }]),
+    })!;
+    expect(inflation.places.find((p) => p.id === "Cuyo")).toMatchObject({
+      label: expect.stringMatching(/ %$/),
+      labelAt: REGIONS.find((r) => r.id === "Cuyo")!.label,
+    });
+    const unemployment = buildMapView(resolveMapSelection({ kpi: "desocupacion" }, periodsOf), {
+      unemployment: series([{ period: "2026-Q2", values: { "13": { value: 9.2 } } }]),
+    })!;
+    const cordoba = AGLOMERADOS.find((a) => a.code === "13")!;
+    expect(unemployment.places.find((p) => p.id === "13")).toMatchObject({ label: "9,2 %", labelAt: [cordoba.lon, cordoba.lat] });
+  });
+
   it("joins the period's values to every area, with no-data areas gray", () => {
     const view = buildMapView(resolveMapSelection({ kpi: "salarios" }, periodsOf), wages)!;
     expect(view.places).toHaveLength(AREAS.length);

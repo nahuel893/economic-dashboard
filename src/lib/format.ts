@@ -93,6 +93,15 @@ export function formatDate(isoDate: string): string {
   }).format(new Date(isoDate));
 }
 
+/** Short value for a map label: "$ 2,76 M", "40,6 mil" or "33,4 %". The exact value stays in the tooltip and the table. */
+export function formatCompact(value: number, unit: Unit): string {
+  if (unit === "percent") return formatPercent(value, 1);
+  const size = Math.abs(value);
+  const [scaled, suffix] = size >= 1e6 ? [value / 1e6, " M"] : size >= 1e3 ? [value / 1e3, " mil"] : [value, ""];
+  const digits = new Intl.NumberFormat(LOCALE, { maximumSignificantDigits: 3 }).format(scaled);
+  return `${unit === "ars" ? "$ " : ""}${digits}${suffix}`;
+}
+
 /** Shorter values for chart axes: no cents unless the values are small, and no currency on millions (the description says it). */
 export function formatAxisValue(value: number, unit: Unit): string {
   if (unit === "usdMillions" || unit === "index" || unit === "index2") return formatNumber(value);

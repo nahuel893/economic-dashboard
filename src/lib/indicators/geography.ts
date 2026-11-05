@@ -6,13 +6,20 @@
 
 export type RegionId = "GBA" | "Pampeana" | "NOA" | "NEA" | "Cuyo" | "Patagonia";
 
-export const REGIONS: { id: RegionId; name: string }[] = [
-  { id: "GBA", name: "Gran Buenos Aires" },
-  { id: "Pampeana", name: "Pampeana" },
-  { id: "NOA", name: "Noroeste" },
-  { id: "NEA", name: "Noreste" },
-  { id: "Cuyo", name: "Cuyo" },
-  { id: "Patagonia", name: "Patagonia" },
+/**
+ * Where a value label sits, as [lon, lat]: a point well inside the shape, from
+ * mapshaper `-points inner` over public/geo/areas.json (regions dissolved).
+ * Salta's is moved by hand from its north-eastern lobe to near its capital.
+ */
+export type LabelPoint = [number, number];
+
+export const REGIONS: { id: RegionId; name: string; label: LabelPoint }[] = [
+  { id: "GBA", name: "Gran Buenos Aires", label: [-58.66, -34.6] },
+  { id: "Pampeana", name: "Pampeana", label: [-62.26, -34.61] },
+  { id: "NOA", name: "Noroeste", label: [-64.65, -27.24] },
+  { id: "NEA", name: "Noreste", label: [-59.78, -26.09] },
+  { id: "Cuyo", name: "Cuyo", label: [-68.07, -33.8] },
+  { id: "Patagonia", name: "Patagonia", label: [-68.65, -42.79] },
 ];
 
 /**
@@ -22,34 +29,34 @@ export const REGIONS: { id: RegionId; name: string }[] = [
  */
 export type AreaId = string;
 
-export type Area = { id: AreaId; name: string; province: string; region: RegionId };
+export type Area = { id: AreaId; name: string; province: string; region: RegionId; label: LabelPoint };
 
 export const AREAS: Area[] = [
-  { id: "02", name: "Ciudad Autónoma de Buenos Aires", province: "02", region: "GBA" },
-  { id: "06-gba", name: "Partidos del Gran Buenos Aires", province: "06", region: "GBA" },
-  { id: "06-resto", name: "Resto de Buenos Aires", province: "06", region: "Pampeana" },
-  { id: "10", name: "Catamarca", province: "10", region: "NOA" },
-  { id: "14", name: "Córdoba", province: "14", region: "Pampeana" },
-  { id: "18", name: "Corrientes", province: "18", region: "NEA" },
-  { id: "22", name: "Chaco", province: "22", region: "NEA" },
-  { id: "26", name: "Chubut", province: "26", region: "Patagonia" },
-  { id: "30", name: "Entre Ríos", province: "30", region: "Pampeana" },
-  { id: "34", name: "Formosa", province: "34", region: "NEA" },
-  { id: "38", name: "Jujuy", province: "38", region: "NOA" },
-  { id: "42", name: "La Pampa", province: "42", region: "Pampeana" },
-  { id: "46", name: "La Rioja", province: "46", region: "NOA" },
-  { id: "50", name: "Mendoza", province: "50", region: "Cuyo" },
-  { id: "54", name: "Misiones", province: "54", region: "NEA" },
-  { id: "58", name: "Neuquén", province: "58", region: "Patagonia" },
-  { id: "62", name: "Río Negro", province: "62", region: "Patagonia" },
-  { id: "66", name: "Salta", province: "66", region: "NOA" },
-  { id: "70", name: "San Juan", province: "70", region: "Cuyo" },
-  { id: "74", name: "San Luis", province: "74", region: "Cuyo" },
-  { id: "78", name: "Santa Cruz", province: "78", region: "Patagonia" },
-  { id: "82", name: "Santa Fe", province: "82", region: "Pampeana" },
-  { id: "86", name: "Santiago del Estero", province: "86", region: "NOA" },
-  { id: "90", name: "Tucumán", province: "90", region: "NOA" },
-  { id: "94", name: "Tierra del Fuego", province: "94", region: "Patagonia" },
+  { id: "02", name: "Ciudad Autónoma de Buenos Aires", province: "02", region: "GBA", label: [-58.45, -34.61] },
+  { id: "06-gba", name: "Partidos del Gran Buenos Aires", province: "06", region: "GBA", label: [-58.67, -34.59] },
+  { id: "06-resto", name: "Resto de Buenos Aires", province: "06", region: "Pampeana", label: [-60.58, -36.7] },
+  { id: "10", name: "Catamarca", province: "10", region: "NOA", label: [-67.11, -27.29] },
+  { id: "14", name: "Córdoba", province: "14", region: "Pampeana", label: [-63.64, -31.76] },
+  { id: "18", name: "Corrientes", province: "18", region: "NEA", label: [-57.8, -28.78] },
+  { id: "22", name: "Chaco", province: "22", region: "NEA", label: [-60.68, -26.56] },
+  { id: "26", name: "Chubut", province: "26", region: "Patagonia", label: [-68.53, -43.79] },
+  { id: "30", name: "Entre Ríos", province: "30", region: "Pampeana", label: [-59.27, -32.07] },
+  { id: "34", name: "Formosa", province: "34", region: "NEA", label: [-59.58, -25.15] },
+  { id: "38", name: "Jujuy", province: "38", region: "NOA", label: [-65.92, -22.84] },
+  { id: "42", name: "La Pampa", province: "42", region: "Pampeana", label: [-65.45, -37.28] },
+  { id: "46", name: "La Rioja", province: "46", region: "NOA", label: [-67.06, -29.54] },
+  { id: "50", name: "Mendoza", province: "50", region: "Cuyo", label: [-68.5, -34.63] },
+  { id: "54", name: "Misiones", province: "54", region: "NEA", label: [-54.36, -26.83] },
+  { id: "58", name: "Neuquén", province: "58", region: "Patagonia", label: [-69.74, -38.6] },
+  { id: "62", name: "Río Negro", province: "62", region: "Patagonia", label: [-67.23, -40.4] },
+  { id: "66", name: "Salta", province: "66", region: "NOA", label: [-64.7, -24.9] },
+  { id: "70", name: "San Juan", province: "70", region: "Cuyo", label: [-68.89, -30.87] },
+  { id: "74", name: "San Luis", province: "74", region: "Cuyo", label: [-66.07, -33.25] },
+  { id: "78", name: "Santa Cruz", province: "78", region: "Patagonia", label: [-70.17, -48.56] },
+  { id: "82", name: "Santa Fe", province: "82", region: "Pampeana", label: [-60.81, -30.48] },
+  { id: "86", name: "Santiago del Estero", province: "86", region: "NOA", label: [-63.25, -27.78] },
+  { id: "90", name: "Tucumán", province: "90", region: "NOA", label: [-65.36, -26.94] },
+  { id: "94", name: "Tierra del Fuego", province: "94", region: "Patagonia", label: [-67.7, -54.39] },
 ];
 
 /**

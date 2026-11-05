@@ -5,9 +5,9 @@
  * employment by area, inflation by region (each area takes its region's value) and the EPH
  * KPIs by aglomerado, as points, never painted on provinces.
  */
-import { formatMonth, type Unit } from "@/lib/format";
+import { formatCompact, formatMonth, type Unit } from "@/lib/format";
 import { SOURCE_NAMES } from "@/lib/sources/citations";
-import { AGLOMERADOS, AREAS, REGIONS, type AreaId } from "./geography";
+import { AGLOMERADOS, AREAS, REGIONS, type AreaId, type LabelPoint } from "./geography";
 import type { MapSeries } from "./map-data";
 
 export type MapKpiId = "salarios" | "empleo" | "pobreza" | "inflacion" | "desocupacion" | "actividad";
@@ -256,6 +256,10 @@ export type MapPlace = {
   /** Point location, for aglomerados. */
   lon?: number;
   lat?: number;
+  /** Short value drawn on the map, or null without data. */
+  label: string | null;
+  /** Where the label sits, as [lon, lat]. */
+  labelAt: LabelPoint;
 };
 
 export type MapOption = { slug: string; label: string };
@@ -287,12 +291,14 @@ export type MapView = {
 /** Aglomerados drawn first, under the others: the GBA partidos surround the city and hide it at country zoom. */
 const DRAWN_UNDER = new Set(["33"]);
 
-function placesOf(geometry: MapGeometry): { id: string; name: string; lon?: number; lat?: number }[] {
-  if (geometry === "areas") return AREAS.map(({ id, name }) => ({ id, name }));
-  if (geometry === "regions") return REGIONS.map(({ id, name }) => ({ id, name }));
+type BasePlace = { id: string; name: string; lon?: number; lat?: number; labelAt: LabelPoint };
+
+function placesOf(geometry: MapGeometry): BasePlace[] {
+  if (geometry === "areas") return AREAS.map(({ id, name, label }) => ({ id, name, labelAt: label }));
+  if (geometry === "regions") return REGIONS.map(({ id, name, label }) => ({ id, name, labelAt: label }));
   return [...AGLOMERADOS]
     .sort((a, b) => Number(DRAWN_UNDER.has(b.code)) - Number(DRAWN_UNDER.has(a.code)))
-    .map(({ code, name, lon, lat }) => ({ id: code, name, lon, lat }));
+    .map(({ code, name, lon, lat }) => ({ id: code, name, lon, lat, labelAt: [lon, lat] }));
 }
 
 function areaPlaceOf(geometry: MapGeometry): Record<AreaId, string> {
@@ -311,12 +317,13 @@ export function buildMapView({ kpi, variant, period }: MapSelection, data: MapKp
     return { ...place, value: found?.value ?? null, ...(found?.cv !== undefined ? { cv: found.cv } : {}), highCv: (found?.cv ?? 0) > HIGH_CV };
   });
   const classes = colorClasses(joined.flatMap((p) => (p.value === null ? [] : [p.value])));
+  const unit = variant.unit ?? kpi.unit;
 
   return {
     kpi: kpi.id,
     label: kpi.label,
     geometry: kpi.geometry,
-    unit: variant.unit ?? kpi.unit,
+    unit,
     source: kpi.source,
     variant: variant.slug,
     variantLabel: variant.label,
@@ -326,7 +333,11 @@ export function buildMapView({ kpi, variant, period }: MapSelection, data: MapKp
     periodLabel: periodLabel(current.period),
     periods: periods.map((p) => ({ slug: p.period, label: periodLabel(p.period) })).reverse(),
     ...(current.note ? { note: current.note } : {}),
-    places: joined.map((p) => ({ ...p, color: classColor(classes, p.value) })),
+    places: joined.map((p) => ({
+      ...p,
+      color: classColor(classes, p.value),
+      label: p.value === null ? null : formatCompact(p.value, unit),
+    })),
     areaPlace: areaPlaceOf(kpi.geometry),
     classes,
   };

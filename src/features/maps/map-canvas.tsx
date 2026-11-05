@@ -74,6 +74,25 @@ export function MapCanvas({ view }: { view: MapView }) {
     [view],
   );
 
+  // One label per place with data: next to each point, or inside each area or region.
+  const labelData = useMemo(
+    (): GeoJSONSourceSpecification["data"] => ({
+      type: "FeatureCollection",
+      features: view.places.flatMap((place) =>
+        place.label === null
+          ? []
+          : [
+              {
+                type: "Feature" as const,
+                geometry: { type: "Point" as const, coordinates: place.labelAt },
+                properties: { id: place.id, label: place.label },
+              },
+            ],
+      ),
+    }),
+    [view],
+  );
+
   // The areas that share the hovered value: one area, or every area of the hovered region.
   const highlighted = useMemo(
     () =>
@@ -185,6 +204,23 @@ export function MapCanvas({ view }: { view: MapView }) {
               "circle-stroke-color": "#ffffff",
               "circle-stroke-width": 1.5,
             }}
+          />
+        </Source>
+
+        {/* Value labels on top of everything. Labels that would overlap are hidden and show up when zooming in. */}
+        <Source id="labels" type="geojson" data={labelData}>
+          <Layer
+            id="value-label"
+            type="symbol"
+            layout={{
+              "text-field": ["get", "label"],
+              "text-font": ["Noto Sans Bold"],
+              "text-size": 12,
+              ...(isPoints
+                ? { "text-variable-anchor": ["left", "right", "top", "bottom"], "text-radial-offset": 0.9 }
+                : { "text-anchor": "center" }),
+            }}
+            paint={{ "text-color": INK, "text-halo-color": "#ffffff", "text-halo-width": 1.5 }}
           />
         </Source>
       </MapGL>

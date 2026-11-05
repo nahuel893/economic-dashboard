@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatArs, formatArsMillions, formatAxisValue, formatChange, formatMonth, formatMonthShort, formatNumber, formatSignedPercent, formatUsdMillions, formatValue } from "./format";
+import { formatArs, formatArsMillions, formatAxisValue, formatChange, formatCompact, formatMonth, formatMonthShort, formatNumber, formatSignedPercent, formatUsdMillions, formatValue } from "./format";
 
 // Intl may use a narrow no-break space between "$" and the amount.
 const normalize = (s: string) => s.replace(/\s/g, " ");
@@ -82,5 +82,21 @@ describe("formatChange", () => {
     expect(formatChange(21, "percent")).toBe(formatSignedPercent(21, 1));
     expect(formatChange(-5, "points")).toBe(`-${formatNumber(5, 1)} pp`);
     expect(formatChange(0, "points")).toBe(`${formatNumber(0, 1)} pp`);
+  });
+});
+
+describe("formatCompact", () => {
+  it("shortens millions and thousands to three significant digits", () => {
+    expect(formatCompact(2_761_629, "ars")).toBe("$ 2,76 M");
+    expect(formatCompact(12_345_678, "ars")).toBe("$ 12,3 M");
+    expect(formatCompact(1_195_617, "count")).toBe("1,2 M");
+    expect(formatCompact(40_566, "count")).toBe("40,6 mil");
+    expect(formatCompact(406_000, "count")).toBe("406 mil");
+  });
+
+  it("keeps small numbers and percentages whole", () => {
+    expect(formatCompact(950, "count")).toBe("950");
+    expect(formatCompact(33.42, "percent")).toBe("33,4 %");
+    expect(formatCompact(-3.5, "percent")).toBe("-3,5 %");
   });
 });
