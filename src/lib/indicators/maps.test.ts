@@ -37,6 +37,8 @@ const PERIODS: Record<string, string[]> = {
   "desocupacion/unemployment": ["2026-Q1", "2026-Q2"],
   "actividad/activity": ["2026-Q1", "2026-Q2"],
   "actividad/employment": ["2026-Q2"],
+  "exportaciones/total": ["2025-H1", "2026-H1"],
+  "exportaciones/yearOnYear": ["2026-H1"],
 };
 const periodsOf = (k: MapKpi, v: MapVariant) => PERIODS[`${k.id}/${v.series}`] ?? [];
 
@@ -49,6 +51,7 @@ describe("MAP_KPIS", () => {
       ["inflacion", "regions", "percent"],
       ["desocupacion", "aglomerados", "percent"],
       ["actividad", "aglomerados", "percent"],
+      ["exportaciones", "areas", "usdMillions"],
     ]);
   });
 
@@ -64,10 +67,14 @@ describe("MAP_KPIS", () => {
     expect(kpi("salarios").variants).toHaveLength(1);
     expect(kpi("desocupacion").variants).toHaveLength(1);
     expect(kpi("actividad").variants.map((v) => v.slug)).toEqual(["actividad", "empleo"]);
+    expect(kpi("exportaciones").variants.map((v) => [v.slug, v.unit])).toEqual([
+      ["total", undefined],
+      ["variacion", "percent"],
+    ]);
   });
 
   it("cites each source by its short name", () => {
-    expect(MAP_KPIS.map((k) => k.source)).toEqual(["OEDE (SIPA)", "OEDE (SIPA)", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, EPH", "INDEC, EPH"]);
+    expect(MAP_KPIS.map((k) => k.source)).toEqual(["OEDE (SIPA)", "OEDE (SIPA)", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, EPH", "INDEC, EPH", "INDEC, OPEX"]);
   });
 });
 
@@ -190,6 +197,21 @@ describe("buildMapView", () => {
     expect(city.label).toBe("$ 2,76 M");
     expect(city.labelAt).toEqual(AREAS.find((a) => a.id === "02")!.label);
     expect(view.places.find((p) => p.id === "94")!.label).toBeNull();
+  });
+
+  it("shows exports in millions of USD by default, labeled whole, and the year-on-year change as a %", () => {
+    const exportsData: MapKpiData = {
+      total: series([{ period: "2026-H1", values: { "14": { value: 5601.31 }, "58": { value: 18.26 } } }]),
+      yearOnYear: series([{ period: "2026-H1", values: { "14": { value: 9.3 } } }]),
+    };
+    const view = (valor?: string) => buildMapView(resolveMapSelection({ kpi: "exportaciones", valor }, periodsOf), exportsData)!;
+    expect(view().unit).toBe("usdMillions");
+    expect(view().periodLabel).toBe("1.er semestre de 2026");
+    expect(view().places.find((p) => p.id === "14")!.label?.replace(/\s/g, " ")).toBe("US$ 5.601 M");
+    expect(view("variacion").unit).toBe("percent");
+    expect(view("variacion").places.find((p) => p.id === "14")!.label).toBe("9,3 %");
+    expect(view("variacion").places.find((p) => p.id === "58")!.label).toBeNull();
+    expect(mapHref("exportaciones", "variacion", "2026-H1")).toBe("/mapas?kpi=exportaciones&valor=variacion&periodo=2026-s1");
   });
 
   it("labels regions at the region's label point and aglomerados at their own point", () => {

@@ -94,6 +94,13 @@ describe("formatCompact", () => {
     expect(formatCompact(406_000, "count")).toBe("406 mil");
   });
 
+  it("writes millions of USD whole up to the thousands, never as 'mil'", () => {
+    expect(normalize(formatCompact(15_965.486, "usdMillions"))).toBe("US$ 15.965 M");
+    expect(normalize(formatCompact(1_234, "usdMillions"))).toBe("US$ 1.234 M");
+    expect(normalize(formatCompact(292.21, "usdMillions"))).toBe("US$ 292 M");
+    expect(normalize(formatCompact(18.26, "usdMillions"))).toBe("US$ 18,3 M");
+  });
+
   it("keeps small numbers and percentages whole", () => {
     expect(formatCompact(950, "count")).toBe("950");
     expect(formatCompact(33.42, "percent")).toBe("33,4 %");

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AGLOMERADOS } from "@/lib/indicators/geography";
+import { AGLOMERADOS, AREAS } from "@/lib/indicators/geography";
 
 const { cacheLife, fetchJson } = vi.hoisted(() => ({ cacheLife: vi.fn(), fetchJson: vi.fn() }));
 vi.mock("next/cache", () => ({ cacheLife }));
@@ -11,6 +11,7 @@ import {
   EMPLOYMENT_URL,
   getEmploymentMap,
   getEphPovertyMap,
+  getExportsMap,
   getLaborRatesMap,
   getRegionalInflationMap,
   getUnemploymentMap,
@@ -153,6 +154,19 @@ describe("map loaders", () => {
         const rate = activity.periods[i].values[code]?.value;
         if (rate !== undefined) expect(cell.value).toBeLessThanOrEqual(rate);
       }
+    }
+  });
+
+  it("loads the exports by area from the committed OPEX snapshot, first halves in ascending order", async () => {
+    const { total, yearOnYear } = await getExportsMap();
+    const periods = total.periods.map((p) => p.period);
+    expect(periods.at(-1)).toMatch(/^\d{4}-H1$/);
+    expect(periods).toEqual([...periods].sort());
+    expect(yearOnYear.periods.map((p) => p.period)).toEqual(periods.slice(1));
+    const known = AREAS.map((a) => a.id);
+    for (const { values } of total.periods) {
+      expect(Object.keys(values).sort()).toEqual([...known].sort());
+      for (const { value } of Object.values(values)) expect(value).toBeGreaterThan(0);
     }
   });
 });

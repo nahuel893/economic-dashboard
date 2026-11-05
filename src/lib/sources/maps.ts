@@ -2,7 +2,7 @@
  * Mapas sources. Each loader returns one MapSeries per value variant, keyed
  * by geography.ts: AreaId for wages, RegionId for inflation and the EPH
  * aglomerado code for poverty and unemployment. Runtime sources are cached
- * like the other clients; EPH data are committed snapshots (scripts/maps).
+ * like the other clients; EPH and OPEX data are committed snapshots (scripts/maps).
  */
 import { readSheet } from "read-excel-file/node";
 import { AREAS, REGIONS, type RegionId } from "@/lib/indicators/geography";
@@ -21,6 +21,7 @@ import { parseDatosSeries } from "./parsers";
 import povertySnapshot from "./snapshots/eph-poverty.json";
 import ratesSnapshot from "./snapshots/eph-rates.json";
 import unemploymentSnapshot from "./snapshots/eph-unemployment.json";
+import opexSnapshot from "./snapshots/opex-exports.json";
 
 /** Months of history each monthly map keeps. */
 const MONTHS = 36;
@@ -129,3 +130,6 @@ export const getUnemploymentMap = async () => unemploymentSnapshot.series.unempl
 
 /** Activity and employment rates by aglomerado, % of the population, quarterly (INDEC EPH; no CV is published). */
 export const getLaborRatesMap = async () => ratesSnapshot.series as { activity: MapSeries; employment: MapSeries };
+
+/** Goods exports by area, millions of USD, first half of each year, and their year-on-year change (INDEC, OPEX; a committed snapshot). */
+export const getExportsMap = async () => opexSnapshot.series as { total: MapSeries; yearOnYear: MapSeries };

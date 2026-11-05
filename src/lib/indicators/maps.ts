@@ -2,7 +2,7 @@
  * The "Mapas" tab: a catalog of the KPIs the map can show, how the URL picks
  * one of them, and the pure work of turning a period's values into colored
  * places. Each KPI is drawn on the geography its source publishes: wages and
- * employment by area, inflation by region (each area takes its region's value) and the EPH
+ * employment and exports by area, inflation by region (each area takes its region's value) and the EPH
  * KPIs by aglomerado, as points, never painted on provinces.
  */
 import { formatCompact, formatMonth, type Unit } from "@/lib/format";
@@ -10,7 +10,7 @@ import { SOURCE_NAMES } from "@/lib/sources/citations";
 import { AGLOMERADOS, AREAS, REGIONS, type AreaId, type LabelPoint } from "./geography";
 import type { MapSeries } from "./map-data";
 
-export type MapKpiId = "salarios" | "empleo" | "pobreza" | "inflacion" | "desocupacion" | "actividad";
+export type MapKpiId = "salarios" | "empleo" | "pobreza" | "inflacion" | "desocupacion" | "actividad" | "exportaciones";
 
 /** Where values are drawn: area fills, area fills by region, or aglomerado points. */
 export type MapGeometry = "areas" | "regions" | "aglomerados";
@@ -150,6 +150,29 @@ export const MAP_KPIS: MapKpi[] = [
         label: "Tasa de empleo",
         series: "employment",
         description: "Población ocupada como porcentaje de la población total.",
+      },
+    ],
+  },
+  {
+    id: "exportaciones",
+    label: "Exportaciones",
+    geometry: "areas",
+    unit: "usdMillions",
+    source: SOURCE_NAMES.indecOpex,
+    variants: [
+      {
+        slug: "total",
+        label: "Millones de USD",
+        series: "total",
+        description:
+          "Exportaciones de bienes según la provincia donde se produce lo exportado, en millones de dólares, durante el primer semestre de cada año.",
+      },
+      {
+        slug: "variacion",
+        label: "Variación interanual",
+        series: "yearOnYear",
+        description: "Variación porcentual de las exportaciones del primer semestre respecto del primer semestre del año anterior.",
+        unit: "percent",
       },
     ],
   },

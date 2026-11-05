@@ -97,6 +97,8 @@ export function formatDate(isoDate: string): string {
 export function formatCompact(value: number, unit: Unit): string {
   if (unit === "percent") return formatPercent(value, 1);
   const size = Math.abs(value);
+  // Already in millions: "mil" would read as thousands of millions, so keep them whole up to US$ 999.999 M.
+  if (unit === "usdMillions") return `US$ ${size >= 100 ? formatNumber(value) : new Intl.NumberFormat(LOCALE, { maximumSignificantDigits: 3 }).format(value)} M`;
   const [scaled, suffix] = size >= 1e6 ? [value / 1e6, " M"] : size >= 1e3 ? [value / 1e3, " mil"] : [value, ""];
   const digits = new Intl.NumberFormat(LOCALE, { maximumSignificantDigits: 3 }).format(scaled);
   return `${unit === "ars" ? "$ " : ""}${digits}${suffix}`;

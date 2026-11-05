@@ -8,6 +8,7 @@ import { EMPLOYMENT_URL, IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps
 import povertySnapshot from "@/lib/sources/snapshots/eph-poverty.json";
 import ratesSnapshot from "@/lib/sources/snapshots/eph-rates.json";
 import unemploymentSnapshot from "@/lib/sources/snapshots/eph-unemployment.json";
+import opexSnapshot from "@/lib/sources/snapshots/opex-exports.json";
 import { REGIONS } from "./geography";
 import { MACRO_SOURCES } from "./macro";
 
@@ -95,6 +96,13 @@ const base = {
     title: "INDEC, Encuesta Permanente de Hogares (EPH)",
     url: "https://www.indec.gob.ar/indec/web/Nivel4-Tema-4-46-152",
     description: "Encuesta a hogares de 31 aglomerados urbanos. Sus resultados son estimaciones con error de muestreo.",
+  },
+  indecOpex: {
+    id: "indecOpex",
+    name: SOURCE_NAMES.indecOpex,
+    title: "INDEC, Origen provincial de las exportaciones (OPEX)",
+    url: "https://www.indec.gob.ar",
+    description: "Exportaciones de bienes según la provincia donde se produce lo exportado.",
   },
 } as const satisfies Record<SourceId, Omit<Reference, "items" | "update" | "note">>;
 
@@ -189,7 +197,7 @@ export function historyReferences(): Reference[] {
 /** The last segment of a file URL, as the detail of its reference item. */
 const fileName = (url: string) => url.slice(url.lastIndexOf("/") + 1);
 
-/** References of "Mapas", in the order of its indicators: wages, poverty and the labor rates, inflation. */
+/** References of "Mapas", in the order of its indicators: wages, poverty and the labor rates, inflation, exports. */
 export function mapsReferences(): Reference[] {
   return [
     {
@@ -239,6 +247,16 @@ export function mapsReferences(): Reference[] {
       items: REGIONS.map((region) => indecItem(region.name, IPC_REGION_SERIES[region.id], "nivel general")),
       update: "Se consulta cada hora; el INDEC publica el IPC una vez por mes.",
       note: "Cada provincia toma el valor de su región: el IPC no se publica por provincia.",
+    },
+    {
+      ...base.indecOpex,
+      items: opexSnapshot.sources.map((url) => ({
+        label: "Exportaciones de bienes por región económica y provincia, en millones de USD, primer semestre de cada año (hoja «Region-prov 2016-2026 semestre»)",
+        detail: fileName(url),
+        url,
+      })),
+      update: "Copiado en el tablero desde el informe del INDEC, que lo publica cada semestre: el primer semestre en septiembre y el año completo en marzo; el mapa usa el primer semestre.",
+      note: "Los datos de los últimos años son provisorios. El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total. Se excluyen las exportaciones de origen indeterminado y las del extranjero y la plataforma continental. La variación interanual la calcula este tablero.",
     },
   ];
 }

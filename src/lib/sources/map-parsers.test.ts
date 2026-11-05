@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AGLOMERADOS, AREAS } from "@/lib/indicators/geography";
+import opexRows from "./__fixtures__/opex-semesters.json";
 import {
   ephPovertySeries,
   findWageWorkbookUrl,
@@ -7,6 +8,7 @@ import {
   parseEphQuarterly,
   parseOedeEmployment,
   parseOedeWages,
+  parseOpexSemesters,
   regionalInflation,
 } from "./map-parsers";
 
@@ -314,5 +316,47 @@ describe("findOedeWorkbookUrl", () => {
 
   it("returns null when the page does not link it", () => {
     expect(findOedeWorkbookUrl("<html></html>", "provinciales_serie_empleo_trimestral_2dig")).toBeNull();
+  });
+});
+
+describe("parseOpexSemesters", () => {
+  const { total, yearOnYear } = parseOpexSemesters(opexRows);
+  const at = (series: typeof total, period: string) => series.periods.find((p) => p.period === period)!;
+
+  it("reads the first-half exports of each area in millions of USD, one period per year", () => {
+    expect(total.periods.map((p) => p.period)).toEqual(
+      ["2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"].map((y) => `${y}-H1`),
+    );
+    expect(at(total, "2026-H1").values["14"].value).toBeCloseTo(5601.31, 2);
+    expect(at(total, "2026-H1").values["02"].value).toBeCloseTo(192.24, 2);
+    expect(at(total, "2016-H1").values["58"].value).toBeCloseTo(48.13, 2);
+  });
+
+  it("gives both halves of Buenos Aires the province total, with a note, since INDEC does not split it", () => {
+    const period = at(total, "2026-H1");
+    expect(period.values["06-gba"].value).toBeCloseTo(15965.49, 2);
+    expect(period.values["06-resto"]).toEqual(period.values["06-gba"]);
+    expect(period.note).toMatch(/Buenos Aires/);
+  });
+
+  it("leaves out the totals, regions, foreign and undetermined rows and covers every area", () => {
+    const ids = Object.keys(at(total, "2026-H1").values).sort();
+    expect(ids).toEqual(AREAS.map((a) => a.id).sort());
+  });
+
+  it("flags provisional years and not the final ones", () => {
+    expect(at(total, "2025-H1").note).toMatch(/provisorio/);
+    expect(at(total, "2023-H1").note ?? "").not.toMatch(/provisorio/);
+  });
+
+  it("computes the year-on-year change against the same half of the previous year", () => {
+    expect(yearOnYear.periods[0].period).toBe("2017-H1");
+    expect(at(yearOnYear, "2026-H1").values["14"].value).toBeCloseTo((5601.3123683 / 5124.3332041 - 1) * 100, 1);
+    expect(at(yearOnYear, "2026-H1").values["06-resto"].value).toBeCloseTo((15965.48627299 / 14505.8110917 - 1) * 100, 1);
+  });
+
+  it("fails on a province it cannot place", () => {
+    const rows = opexRows.map((row) => (row[1] === "Salta" ? [row[0], "Atlantida", ...row.slice(2)] : row));
+    expect(() => parseOpexSemesters(rows)).toThrow(/Atlantida/);
   });
 });

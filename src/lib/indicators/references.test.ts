@@ -9,6 +9,7 @@ import { EMPLOYMENT_URL, IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps
 import povertySnapshot from "@/lib/sources/snapshots/eph-poverty.json";
 import ratesSnapshot from "@/lib/sources/snapshots/eph-rates.json";
 import unemploymentSnapshot from "@/lib/sources/snapshots/eph-unemployment.json";
+import opexSnapshot from "@/lib/sources/snapshots/opex-exports.json";
 import { REGIONS } from "./geography";
 import { historyReferences, homeReferences, mapsReferences } from "./references";
 
@@ -67,12 +68,16 @@ describe("mapsReferences", () => {
   const urls = (id: string) => refs.find((ref) => ref.id === id)!.items.map((item) => item.url);
 
   it("lists the sources of the map in the order of its indicators", () => {
-    expect(refs.map((ref) => ref.id)).toEqual(["oede", "indecEph", "indec"]);
+    expect(refs.map((ref) => ref.id)).toEqual(["oede", "indecEph", "indec", "indecOpex"]);
   });
 
   it("names each source as the map cites it", () => {
-    expect(refs.map((ref) => ref.name)).toEqual(["OEDE (SIPA)", "INDEC, EPH", "INDEC vía datos.gob.ar"]);
+    expect(refs.map((ref) => ref.name)).toEqual(["OEDE (SIPA)", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, OPEX"]);
     for (const ref of refs) expect(citationParts(ref.name)).toEqual([{ name: ref.name, id: ref.id }]);
+  });
+
+  it("links the INDEC OPEX file the exports snapshot was built from", () => {
+    expect(urls("indecOpex")).toEqual(opexSnapshot.sources);
   });
 
   it("links the OEDE wage and employment workbooks and the INDEC files the snapshots were built from", () => {
