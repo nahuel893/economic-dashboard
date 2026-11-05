@@ -3,6 +3,7 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { LINE_COLORS } from "@/components/dashboard/chart-colors";
+import { ZoomBar } from "@/components/dashboard/chart-zoom";
 import { toneVar, VARIABLE_TONES } from "@/components/dashboard/tones";
 import { formatChange, formatDate, formatMonth, formatValue } from "@/lib/format";
 import {
@@ -14,9 +15,10 @@ import {
   type PanelChart as PanelChartSpec,
   type PanelVariable,
 } from "@/lib/indicators/panel";
+import type { ZoomWindow } from "@/lib/indicators/zoom";
 import { CITATION_SEPARATOR } from "@/lib/sources/citations";
 import { cn } from "@/lib/utils";
-import { PanelChart, type ChartSeries } from "./panel-chart";
+import { formatPanelMonth, PanelChart, type ChartSeries } from "./panel-chart";
 
 /** CSS color of a variable's topic tone. */
 const variableColor = (key: string) => toneVar(VARIABLE_TONES[key] ?? "dollars");
@@ -96,6 +98,11 @@ function toSeries(variables: PanelVariable[], colors: string[], labels: Record<s
 export function PanelBoard({ panel }: { panel: Panel }) {
   const [selected, setSelected] = useState<string>(PANEL_KPIS[0]);
   const featured = panel.variables[selected];
+  // One zoom for every chart, cleared when the period changes.
+  const rangeKey = `${panel.range.from}:${panel.range.to}`;
+  const [zoomState, setZoomState] = useState<{ range: string; window: ZoomWindow | null }>({ range: rangeKey, window: null });
+  const zoom = zoomState.range === rangeKey ? zoomState.window : null;
+  const setZoom = (window: ZoomWindow | null) => setZoomState({ range: rangeKey, window });
 
   return (
     <div className="flex flex-col gap-3">
@@ -104,6 +111,8 @@ export function PanelBoard({ panel }: { panel: Panel }) {
           <KpiCard key={key} variable={panel.variables[key]} selected={key === selected} onSelect={() => setSelected(key)} />
         ))}
       </section>
+
+      <ZoomBar window={zoom} onReset={() => setZoom(null)} format={formatPanelMonth} className="rounded-lg bg-card px-3 py-2 ring-1 ring-foreground/10" />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div style={toneStyle(featured.key)} className="flex md:col-span-2 xl:row-span-2" aria-live="polite">
@@ -117,6 +126,9 @@ export function PanelBoard({ panel }: { panel: Panel }) {
             series={toSeries([featured], [variableColor(featured.key)])}
             rows={mergeByMonth([featured])}
             source={featured.source}
+            zoom={zoom}
+            onZoom={setZoom}
+            slider
             headline={
               featured.last ? (
                 <div className="flex shrink-0 flex-col items-end">
@@ -142,6 +154,8 @@ export function PanelBoard({ panel }: { panel: Panel }) {
                 series={toSeries(variables, seriesColors(chart), chart.labels)}
                 rows={mergeByMonth(variables)}
                 source={sourcesOf(variables)}
+                zoom={zoom}
+                onZoom={setZoom}
               />
             </div>
           );

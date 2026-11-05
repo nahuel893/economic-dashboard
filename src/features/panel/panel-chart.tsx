@@ -1,12 +1,14 @@
 "use client";
 
 import { useId, type ReactNode } from "react";
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
+import { useZoomDrag, ZoomSlider } from "@/components/dashboard/chart-zoom";
 import { SourceCitation } from "@/components/dashboard/source-citation";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { formatAxisValue, formatMonth, formatMonthShort, formatNumber, formatValue, type Unit } from "@/lib/format";
 import { linearTicks, periodTicks } from "@/lib/indicators/history";
 import type { MonthRow } from "@/lib/indicators/panel";
+import { inWindow, type ZoomWindow } from "@/lib/indicators/zoom";
 import { cn } from "@/lib/utils";
 
 /** Every chart of the panel shares this id: hovering a month on one shows it on all. */
@@ -26,6 +28,11 @@ type PanelChartProps = {
   /** Value shown in the header, e.g. the latest close. */
   headline?: ReactNode;
   className?: string;
+  /** Zoom shared by the whole panel: months drawn on every chart. */
+  zoom: ZoomWindow | null;
+  onZoom: (window: ZoomWindow | null) => void;
+  /** A range slider below the chart, the way to zoom on touch screens. */
+  slider?: boolean;
 };
 
 /** Months are plain YYYY-MM keys; mid-month avoids any time zone shift. */
@@ -35,7 +42,15 @@ function tickLabel(month: string, byYear: boolean) {
   return byYear ? month.slice(0, 4) : `${formatMonthShort(monthDate(month)).slice(0, 3)} ${month.slice(2, 4)}`;
 }
 
-export function PanelChart({ title, description, kind, unit, series, rows, source, size, headline, className }: PanelChartProps) {
+/** Months are shown as "mayo de 2024" in the zoom controls. */
+export const formatPanelMonth = (month: string) => formatMonth(monthDate(month));
+
+export function PanelChart(props: PanelChartProps) {
+  const { title, description, kind, unit, series, source, size, headline, className, zoom, onZoom, slider } = props;
+  const keys = props.rows.map((row) => row.month);
+  const zoomDrag = useZoomDrag(keys, onZoom);
+  // Every scale below is computed on the visible months, so the chart fits the zoom.
+  const rows = inWindow(props.rows, (row) => row.month, zoom);
   const id = useId();
   const drawn = series.filter((s) => s.available);
   const config = Object.fromEntries(drawn.map((s) => [s.key, { label: s.label, color: s.color }])) satisfies ChartConfig;
@@ -80,69 +95,77 @@ export function PanelChart({ title, description, kind, unit, series, rows, sourc
       ) : null}
 
       {drawn.length && rows.length > 1 ? (
-        <ChartContainer
-          config={config}
-          className={cn("aspect-auto w-full min-w-0", size === "lg" ? "min-h-72 flex-1" : "h-28")}
-          initialDimension={{ width: 300, height: size === "lg" ? 288 : 112 }}
-        >
-          <Chart data={rows} syncId={SYNC_ID} syncMethod="value" margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <CartesianGrid vertical={false} stroke="var(--border)" />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              ticks={ticks}
-              interval={0}
-              tick={{ fontSize: 10 }}
-              tickFormatter={(month: string) => tickLabel(month, byYear)}
-            />
-            <YAxis
-              width={size === "lg" ? 68 : 56}
-              tickLine={false}
-              axisLine={false}
-              tick={{ fontSize: 10 }}
-              ticks={yTicks}
-              domain={yDomain}
-              interval={0}
-              // Basis points without the unit: the description names it and the ticks stay on one line.
-              tickFormatter={(value: number) => (unit === "bps" ? formatNumber(value) : formatAxisValue(value, unit))}
-            />
-            {kind === "bar" ? <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeOpacity={0.6} /> : null}
-            <Tooltip
-              cursor={kind === "bar" ? { fill: "var(--foreground)", fillOpacity: 0.06 } : { stroke: "var(--muted-foreground)", strokeDasharray: "3 3" }}
-              content={({ active, payload, label }) => {
-                if (!active || !payload?.length) return null;
-                return (
-                  <div className="flex flex-col gap-0.5 rounded-md border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-sm">
-                    <span className="text-muted-foreground">Cierre de {formatMonth(monthDate(String(label)))}</span>
-                    {payload.map((entry) => {
-                      const s = drawn.find((d) => d.key === entry.dataKey);
-                      return s && typeof entry.value === "number" ? (
-                        <span key={s.key} className="flex items-center gap-1.5">
-                          {drawn.length > 1 ? <span className="size-2 rounded-full" style={{ background: s.color }} aria-hidden /> : null}
-                          {drawn.length > 1 ? <span className="text-muted-foreground">{s.label}</span> : null}
-                          <span className="font-medium tabular-nums">{formatValue(entry.value, unit)}</span>
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
-                );
-              }}
-            />
-            {drawn.map((s) =>
-              kind === "bar" ? (
-                <Bar key={s.key} dataKey={s.key} fill={s.color} radius={[2, 2, 0, 0]} maxBarSize={18} isAnimationActive={false} />
-              ) : (
-                <Line key={s.key} type="linear" dataKey={s.key} stroke={s.color} strokeWidth={2} dot={false} isAnimationActive={false} />
-              ),
-            )}
-          </Chart>
-        </ChartContainer>
+        // The large chart grows with its card, so the wrapper must keep the flex chain.
+        <div {...zoomDrag.containerProps} className={cn(zoomDrag.containerProps.className, size === "lg" && "flex min-h-0 flex-1 flex-col")}>
+          <ChartContainer
+            config={config}
+            className={cn("aspect-auto w-full min-w-0", size === "lg" ? "min-h-72 flex-1" : "h-28")}
+            initialDimension={{ width: 300, height: size === "lg" ? 288 : 112 }}
+          >
+            <Chart data={rows} syncId={SYNC_ID} syncMethod="value" margin={{ top: 4, right: 4, bottom: 0, left: 0 }} {...zoomDrag.chartProps}>
+              <CartesianGrid vertical={false} stroke="var(--border)" />
+              {zoomDrag.selection ? (
+                <ReferenceArea x1={zoomDrag.selection.start} x2={zoomDrag.selection.end} fill="var(--tone)" fillOpacity={0.18} />
+              ) : null}
+              <XAxis
+                dataKey="month"
+                tickLine={false}
+                axisLine={false}
+                ticks={ticks}
+                interval={0}
+                tick={{ fontSize: 10 }}
+                tickFormatter={(month: string) => tickLabel(month, byYear)}
+              />
+              <YAxis
+                width={size === "lg" ? 68 : 56}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 10 }}
+                ticks={yTicks}
+                domain={yDomain}
+                interval={0}
+                // Basis points without the unit: the description names it and the ticks stay on one line.
+                tickFormatter={(value: number) => (unit === "bps" ? formatNumber(value) : formatAxisValue(value, unit))}
+              />
+              {kind === "bar" ? <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeOpacity={0.6} /> : null}
+              <Tooltip
+                cursor={kind === "bar" ? { fill: "var(--foreground)", fillOpacity: 0.06 } : { stroke: "var(--muted-foreground)", strokeDasharray: "3 3" }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className="flex flex-col gap-0.5 rounded-md border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-sm">
+                      <span className="text-muted-foreground">Cierre de {formatMonth(monthDate(String(label)))}</span>
+                      {payload.map((entry) => {
+                        const s = drawn.find((d) => d.key === entry.dataKey);
+                        return s && typeof entry.value === "number" ? (
+                          <span key={s.key} className="flex items-center gap-1.5">
+                            {drawn.length > 1 ? <span className="size-2 rounded-full" style={{ background: s.color }} aria-hidden /> : null}
+                            {drawn.length > 1 ? <span className="text-muted-foreground">{s.label}</span> : null}
+                            <span className="font-medium tabular-nums">{formatValue(entry.value, unit)}</span>
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  );
+                }}
+              />
+              {drawn.map((s) =>
+                kind === "bar" ? (
+                  <Bar key={s.key} dataKey={s.key} fill={s.color} radius={[2, 2, 0, 0]} maxBarSize={18} isAnimationActive={false} />
+                ) : (
+                  <Line key={s.key} type="linear" dataKey={s.key} stroke={s.color} strokeWidth={2} dot={false} isAnimationActive={false} />
+                ),
+              )}
+            </Chart>
+          </ChartContainer>
+        </div>
       ) : (
         <p className={cn("flex items-center justify-center text-center text-sm text-muted-foreground", size === "lg" ? "min-h-72 flex-1" : "h-28")}>
           {drawn.length ? "No hay datos en este período." : `No disponible: ${source} no respondió.`}
         </p>
       )}
+
+      {slider ? <ZoomSlider keys={keys} window={zoom} onChange={onZoom} format={formatPanelMonth} /> : null}
 
       <p className="mt-auto text-[11px] text-muted-foreground">
         Fuente: <SourceCitation source={source} />
