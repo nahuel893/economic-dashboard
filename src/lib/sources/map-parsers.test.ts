@@ -1,0 +1,236 @@
+import { describe, expect, it } from "vitest";
+import { AGLOMERADOS, AREAS } from "@/lib/indicators/geography";
+import {
+  ephPovertySeries,
+  findWageWorkbookUrl,
+  parseEphQuarterly,
+  parseOedeWages,
+  regionalInflation,
+} from "./map-parsers";
+
+const utc = (y: number, m: number, d = 1) => new Date(Date.UTC(y, m - 1, d));
+
+/** OEDE province rows in sheet order, as the "Total" sheet spells them. */
+const OEDE_NAMES = [
+  "GRAN BUENOS AIRES", "CAPITAL FEDERAL", "BUENOS AIRES", "CATAMARCA", "CORDOBA", "CORRIENTES", "CHACO", "CHUBUT",
+  "ENTRE RIOS", "FORMOSA", "JUJUY", "LA PAMPA", "LA RIOJA", "MENDOZA", "MISIONES", "NEUQUEN", "RIO NEGRO", "SALTA",
+  "SAN JUAN", "SAN LUIS", "SANTA CRUZ", "SANTA FE", "SANTIAGO DEL ESTERO", "TUCUMAN", "TIERRA DEL FUEGO",
+];
+
+function oedeSheet(names = OEDE_NAMES) {
+  return [
+    ["Remuneración promedio de los trabajadores registrados del sector privado"],
+    [],
+    ["Provincia", utc(2026, 4, 11), utc(2026, 5, 11), utc(2026, 6, 11), null],
+    ...names.map((name, i) => [name, 100 + i, "s.d.", 300 + i, null]),
+    ["Total", 1, 2, 3],
+    ["Fuente: STEySS, en base a SIPA."],
+  ];
+}
+
+describe("parseOedeWages", () => {
+  it("keys each OEDE row by map area and marks the aguinaldo months", () => {
+    const series = parseOedeWages(oedeSheet(), 36);
+    expect(series.periods.map((p) => [p.period, p.note])).toEqual([
+      ["2026-04", undefined],
+      ["2026-06", "Incluye aguinaldo"],
+    ]);
+    const june = series.periods[1].values;
+    expect(Object.keys(june).sort()).toEqual(AREAS.map((a) => a.id).sort());
+    expect(june["06-gba"]).toEqual({ value: 300 });
+    expect(june["02"]).toEqual({ value: 301 });
+    expect(june["06-resto"]).toEqual({ value: 302 });
+    expect(june["14"]).toEqual({ value: 304 });
+    expect(june["94"]).toEqual({ value: 324 });
+    expect(series.periods[0].values["90"]).toEqual({ value: 123 });
+  });
+
+  it("keeps only the most recent months", () => {
+    expect(parseOedeWages(oedeSheet(), 1).periods.map((p) => p.period)).toEqual(["2026-06"]);
+  });
+
+  it("fails on a row it cannot place on the map", () => {
+    expect(() => parseOedeWages(oedeSheet([...OEDE_NAMES, "ISLAS DEL ATLANTICO"]), 36)).toThrow(
+      'OEDE wages: unknown province row "ISLAS DEL ATLANTICO"',
+    );
+  });
+
+  it("fails when an area is missing", () => {
+    expect(() => parseOedeWages(oedeSheet(OEDE_NAMES.slice(1)), 36)).toThrow("OEDE wages: no row for 06-gba");
+  });
+
+  it("fails without the header row", () => {
+    expect(() => parseOedeWages([["Provincias"]], 36)).toThrow("OEDE wages: header row not found");
+  });
+});
+
+describe("findWageWorkbookUrl", () => {
+  it("finds the current monthly 2-digit workbook on the index page", () => {
+    const html = `<a href="/sites/default/files/provinciales_serie_remuneraciones_mensual_4dig_8.xlsx">x</a>
+      <a href="/sites/default/files/provinciales_serie_remuneraciones_mensual_2dig_10.xlsx">y</a>`;
+    expect(findWageWorkbookUrl(html)).toBe(
+      "https://www.argentina.gob.ar/sites/default/files/provinciales_serie_remuneraciones_mensual_2dig_10.xlsx",
+    );
+  });
+
+  it("returns null when the page does not link it", () => {
+    expect(findWageWorkbookUrl("<html></html>")).toBeNull();
+  });
+});
+
+describe("regionalInflation", () => {
+  const months = ["2025-01-01", "2025-02-01", "2025-12-01", "2026-01-01", "2026-02-01"];
+  const levels = (base: number) => months.map((date, i) => ({ date, value: base * [100, 102, 120, 125, 130][i] }));
+
+  it("computes monthly and year-on-year change per region from index levels", () => {
+    const { monthly, yearOnYear } = regionalInflation([1, 1, 1, 1, 1, 2].map(levels), 36);
+    expect(monthly.periods.map((p) => p.period)).toEqual(["2025-02", "2026-01", "2026-02"]);
+    expect(monthly.periods[1].values.GBA.value).toBeCloseTo(4.1667, 4);
+    expect(monthly.periods[2].values.Patagonia.value).toBeCloseTo(4, 6);
+    expect(Object.keys(monthly.periods[2].values)).toEqual(["GBA", "Pampeana", "NOA", "NEA", "Cuyo", "Patagonia"]);
+    expect(yearOnYear.periods.map((p) => p.period)).toEqual(["2026-01", "2026-02"]);
+    expect(yearOnYear.periods[0].values.NOA.value).toBeCloseTo(25, 6);
+    expect(yearOnYear.periods[1].values.Cuyo.value).toBeCloseTo(27.451, 3);
+  });
+
+  it("keeps only the most recent months", () => {
+    expect(regionalInflation([1, 1, 1, 1, 1, 1].map(levels), 1).monthly.periods.map((p) => p.period)).toEqual([
+      "2026-02",
+    ]);
+  });
+});
+
+/** An EPH table row for each aglomerado, in the XLS's own spelling. */
+const EPH_NAMES: Record<string, string> = {
+  "2": "Gran La Plata",
+  "3": "Bahía Blanca - Cerri",
+  "4": "Gran Rosario",
+  "5": "Gran Santa Fe",
+  "6": "Gran Paraná",
+  "7": "Posadas",
+  "8": "Gran Resistencia ",
+  "9": "Comodoro Rivadavia-Rada Tilly",
+  "10": "Gran Mendoza",
+  "12": "Corrientes ",
+  "13": "Gran Córdoba",
+  "14": "Concordia",
+  "15": "Formosa",
+  "17": "Neuquén-Plottier",
+  "18": "Santiago del Estero - La Banda",
+  "19": "Jujuy - Palpalá",
+  "20": "Río Gallegos",
+  "22": "Gran Catamarca",
+  "23": "Salta",
+  "25": "La Rioja",
+  "26": "Gran San Luis",
+  "27": "Gran San Juan",
+  "29": "Gran Tucumán-Tafí Viejo",
+  "30": "Santa Rosa - Toay",
+  "31": "Ushuaia - Río Grande ",
+  "32": "Ciudad Autónoma de Buenos Aires",
+  "33": "Partidos del GBA",
+  "34": "MAR DEL PLATA",
+  "36": "Río Cuarto",
+  "38": "San Nicolás - Villa Constitución",
+  "91": "Rawson - Trelew",
+  "93": "Viedma - Carmen de Patagones",
+};
+
+const codes = AGLOMERADOS.map((a) => a.code);
+
+/** Cuadro 4.1 / 4.2 of the poverty report: one half-year, households and persons with CVs. */
+function povertyTable(title: string, n: number, extra: unknown[][] = []) {
+  return [
+    [`Cuadro 4.1. Incidencia de la pobreza en hogares y personas. Total 31 aglomerados urbanos. ${title}*`],
+    [],
+    ["Área geográfica", "Hogares", null, null, null, "Personas", null, null],
+    [null, "Total (en miles)", "Incidencia", "CV", null, "Total (en miles)", "Incidencia", "CV"],
+    ["Total 31 aglomerados urbanos ", 2498, 24.4, 2.7, null, 9729, 32.3, 2.7],
+    ["Regiones"],
+    ["Gran Buenos Aires", 1356, 24.9, 4.5, null, 5221, 32.1, 4.6],
+    ...codes.map((code, i) => [EPH_NAMES[code], 10, n + i, 5, null, 40, n + 100 + i, 6]),
+    ...extra,
+    ["Total Aglomerados de 500.000 y más habitantes", 2017, 24.1, 3.2, null, 7815, 31.7, 3.3],
+    ["Nota: las estimaciones que tengan asociados coeficientes de variación entre el 16% y el 25%..."],
+    ["Fuente: INDEC. Encuesta Permanente de Hogares."],
+  ];
+}
+
+describe("ephPovertySeries", () => {
+  it("builds the four variants per aglomerado, one period per release, in ascending order", () => {
+    const series = ephPovertySeries([
+      { poverty: povertyTable("Primer semestre de 2026", 20), indigence: povertyTable("Primer semestre de 2026", 1) },
+      { poverty: povertyTable("Segundo semestre de 2025", 30), indigence: povertyTable("Segundo semestre de 2025", 2) },
+    ]);
+    expect(Object.keys(series)).toEqual(["povertyPersons", "povertyHouseholds", "indigencePersons", "indigenceHouseholds"]);
+    expect(series.povertyPersons.periods.map((p) => p.period)).toEqual(["2025-H2", "2026-H1"]);
+    const latest = series.povertyPersons.periods[1].values;
+    expect(Object.keys(latest).sort()).toEqual([...codes].sort());
+    expect(latest["2"]).toEqual({ value: 120, cv: 6 });
+    expect(latest["93"]).toEqual({ value: 151, cv: 6 });
+    expect(series.povertyHouseholds.periods[0].values["23"]).toEqual({ value: 48, cv: 5 });
+    expect(series.indigencePersons.periods[1].values["34"]).toEqual({ value: 128, cv: 6 });
+    expect(series.indigenceHouseholds.periods[0].values["33"]).toEqual({ value: 28, cv: 5 });
+  });
+
+  it("fails on a row that is not an aglomerado nor a known aggregate", () => {
+    const table = povertyTable("Primer semestre de 2026", 20, [["Gran Bariloche", 1, 2, 3, null, 4, 5, 6]]);
+    expect(() => ephPovertySeries([{ poverty: table, indigence: table }])).toThrow(
+      'EPH: unknown aglomerado row "Gran Bariloche"',
+    );
+  });
+
+  it("fails when the poverty and indigence tables cover different half-years", () => {
+    expect(() =>
+      ephPovertySeries([
+        { poverty: povertyTable("Primer semestre de 2026", 20), indigence: povertyTable("Segundo semestre de 2025", 1) },
+      ]),
+    ).toThrow("EPH: poverty is 2026-H1 but indigence is 2025-H2");
+  });
+
+  it("fails when two releases cover the same half-year", () => {
+    const release = { poverty: povertyTable("Primer semestre de 2026", 20), indigence: povertyTable("Primer semestre de 2026", 1) };
+    expect(() => ephPovertySeries([release, release])).toThrow("EPH: half-year 2026-H1 appears twice");
+  });
+});
+
+/** Cuadro 1.8 of the EPH labor-market report: one column per quarter, years spanning their quarters. */
+function unemploymentTable() {
+  return [
+    ["1.8. Tasa de desocupación. Segundo trimestre de 2016-segundo trimestre de 2026"],
+    [],
+    ["Área geográfica", "Año 2025", null, null, null, null, "Año 2026", null],
+    [null, "Trimestre", null, null, null, null, "Trimestre", null],
+    [null, "1°", "2°", "3° (3)", "4°", null, "1°", "2°*"],
+    [],
+    ["Total 31 aglomerados urbanos", 7.9, 7.6, 6.6, 7.5, null, 7.8, 7.9],
+    ["Regiones"],
+    ["Partidos del Gran Buenos Aires", 10, 11, 12, 13, null, 14, 15],
+    ...codes
+      .filter((code) => code !== "33")
+      .map((code, i) => [EPH_NAMES[code], i, i, code === "93" ? "///" : i, i, null, i, i + 0.5]),
+    ["Total aglomerados de menos de 500.000 habitantes", 5.9, 4.6, 4.8, 5, null, 5.2, 5.3],
+    ["(3) En el tercer trimestre 2025, el aglomerado de Viedma-Carmen de Patagones presenta una cantidad insuficiente de casos."],
+  ];
+}
+
+describe("parseEphQuarterly", () => {
+  it("reads one period per quarter column, keyed by aglomerado", () => {
+    const series = parseEphQuarterly(unemploymentTable(), 12);
+    expect(series.periods.map((p) => p.period)).toEqual(["2025-Q1", "2025-Q2", "2025-Q3", "2025-Q4", "2026-Q1", "2026-Q2"]);
+    expect(Object.keys(series.periods[5].values).sort()).toEqual([...codes].sort());
+    expect(series.periods[5].values["33"]).toEqual({ value: 15 });
+    expect(series.periods[5].values["2"]).toEqual({ value: 0.5 });
+    expect(series.periods[0].values["93"]).toEqual({ value: 30 });
+    expect(series.periods[2].values["93"]).toBeUndefined();
+  });
+
+  it("keeps only the most recent quarters", () => {
+    expect(parseEphQuarterly(unemploymentTable(), 2).periods.map((p) => p.period)).toEqual(["2026-Q1", "2026-Q2"]);
+  });
+
+  it("fails when an aglomerado row is missing", () => {
+    const table = unemploymentTable().filter((row) => row[0] !== "Gran Rosario");
+    expect(() => parseEphQuarterly(table, 12)).toThrow("EPH: no row for aglomerado 4 (Gran Rosario)");
+  });
+});

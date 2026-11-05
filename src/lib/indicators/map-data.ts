@@ -15,6 +15,8 @@ export type MapPeriod = {
   /** Sortable key: "2026-06" (month), "2026-Q2" (quarter) or "2026-H1" (half-year). */
   period: string;
   values: Record<string, MapValue>;
+  /** Caveat shown with this period, in Spanish (e.g. wages that include the aguinaldo). */
+  note?: string;
 };
 
 export type MapSeries = { periods: MapPeriod[] };

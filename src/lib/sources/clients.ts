@@ -12,6 +12,8 @@ import { parseBcraSeries, parseBymaIndex, parseDailyQuotes, parseDatosSeries, pa
 export const CACHE = {
   live: { stale: 60, revalidate: 120, expire: 3600 },
   daily: { stale: 300, revalidate: 3600, expire: 86400 },
+  /** Large files published monthly or less often (the OEDE wage workbook). */
+  slow: { stale: 3600, revalidate: 86400, expire: 7 * 86400 },
 } as const;
 
 type CacheProfile = (typeof CACHE)[keyof typeof CACHE];
@@ -20,7 +22,7 @@ type CacheProfile = (typeof CACHE)[keyof typeof CACHE];
 const FAILURE_CACHE = { stale: 30, revalidate: 60, expire: 300 } as const;
 
 /** Result of a cached request: cached functions must not reject (see `attempt`). */
-type Outcome<T> = { ok: true; value: T } | { ok: false; message: string };
+export type Outcome<T> = { ok: true; value: T } | { ok: false; message: string };
 
 /**
  * Runs a request inside a "use cache" function and turns a failure into a
@@ -29,7 +31,7 @@ type Outcome<T> = { ok: true; value: T } | { ok: false; message: string };
  * catches the error, so failures leave the cache as data and are thrown again
  * by `unwrap`, outside of it. Failures are kept only briefly.
  */
-async function attempt<T>(life: CacheProfile, load: () => Promise<T>): Promise<Outcome<T>> {
+export async function attempt<T>(life: CacheProfile, load: () => Promise<T>): Promise<Outcome<T>> {
   try {
     const value = await load();
     cacheLife(life);
@@ -40,7 +42,7 @@ async function attempt<T>(life: CacheProfile, load: () => Promise<T>): Promise<O
   }
 }
 
-function unwrap<T>(outcome: Outcome<T>): T {
+export function unwrap<T>(outcome: Outcome<T>): T {
   if (!outcome.ok) throw new Error(outcome.message);
   return outcome.value;
 }
