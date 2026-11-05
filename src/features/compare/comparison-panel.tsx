@@ -1,7 +1,8 @@
 "use client";
 
 import { useId, useState } from "react";
-import { CartesianGrid, Line, LineChart, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
+import { useZoomDrag, ZoomBar } from "@/components/dashboard/chart-zoom";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { formatDate, formatMonth, formatMonthShort, formatNumber, formatValue } from "@/lib/format";
 
@@ -10,6 +11,8 @@ const formatPoints = (value: number, decimals: number) =>
 import { changeSinceStart, correlate, mergeByDate, rebase100, type Correlation } from "@/lib/indicators/stats";
 import type { Point } from "@/lib/indicators/types";
 import { LINE_COLORS } from "@/components/dashboard/chart-colors";
+import { linearTicks } from "@/lib/indicators/history";
+import { inWindow, type ZoomWindow } from "@/lib/indicators/zoom";
 import { cn } from "@/lib/utils";
 import type { CompareSpec, CompareVariable } from "./specs";
 
@@ -44,10 +47,18 @@ export function ComparisonPanel({ spec, title }: { spec: CompareSpec; title: str
       return next;
     });
 
-  if (spec.variables.length < 2) return null;
-
   const series = active.length ? chartPoints(active, spec.mode) : [];
-  const rows = mergeByDate(series);
+  const allRows = mergeByDate(series);
+  // Visual zoom over the dates; the correlations keep using every point.
+  const [zoom, setZoom] = useState<ZoomWindow | null>(null);
+  const zoomDrag = useZoomDrag(allRows.map((row) => row.date), setZoom);
+  const rows = inWindow(allRows, (row) => row.date, zoom);
+  // While zoomed the Y axis fits the visible values; otherwise the library rounds it.
+  const visible = rows.flatMap((row) => active.map((v) => row[v.key]).filter((y): y is number => typeof y === "number"));
+  const yTicks = zoom && visible.length ? linearTicks(Math.min(...visible), Math.max(...visible), 5) : undefined;
+  const yDomain = zoom && visible.length ? [Math.min(...visible), Math.max(...visible)] : ["auto", "auto"];
+
+  if (spec.variables.length < 2) return null;
   const config = Object.fromEntries(
     spec.variables.map((v) => [v.key, { label: v.label, color: colorOf(v.key) }]),
   ) satisfies ChartConfig;
@@ -55,8 +66,8 @@ export function ComparisonPanel({ spec, title }: { spec: CompareSpec; title: str
     spec.mode === "index100" ? formatNumber(value, 0) : spec.mode === "change" ? formatPoints(value, 1) : formatValue(value, spec.unit);
   const formatTooltip = (value: number) =>
     spec.mode === "index100" ? formatNumber(value, 1) : spec.mode === "change" ? formatPoints(value, 2) : formatValue(value, spec.unit);
-  const first = rows[0]?.date;
-  const last = rows.at(-1)?.date;
+  const first = allRows[0]?.date;
+  const last = allRows.at(-1)?.date;
 
   return (
     <div className="flex flex-col gap-4 rounded-lg bg-card p-4 ring-1 ring-foreground/10">
@@ -90,65 +101,73 @@ export function ComparisonPanel({ spec, title }: { spec: CompareSpec; title: str
       </fieldset>
 
       {rows.length > 1 ? (
-        <ChartContainer config={config} className="aspect-auto h-64 w-full min-w-0" initialDimension={{ width: 300, height: 256 }}>
-          <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid vertical={false} stroke="var(--border)" />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              minTickGap={24}
-              tick={{ fontSize: 11 }}
-              tickFormatter={(d: string) => formatAxisDate(d, spec.frequency)}
-            />
-            <YAxis
-              width={72}
-              tickLine={false}
-              axisLine={false}
-              domain={["auto", "auto"]}
-              tick={{ fontSize: 11 }}
-              tickFormatter={formatY}
-            />
-            {spec.mode !== "level" ? (
-              <ReferenceLine y={spec.mode === "index100" ? 100 : 0} stroke="var(--muted-foreground)" strokeDasharray="4 4" />
-            ) : null}
-            <Tooltip
-              cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1, strokeDasharray: "3 3" }}
-              content={({ active: isActive, payload, label }) => {
-                if (!isActive || !payload?.length) return null;
-                return (
-                  <div className="flex flex-col gap-1 rounded-md border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-sm">
-                    <span className="text-muted-foreground">
-                      {spec.frequency === "monthly" ? formatMonth(String(label)) : formatDate(String(label))}
-                    </span>
-                    {payload.map((entry) => (
-                      <span key={String(entry.dataKey)} className="flex items-center gap-2">
-                        <span className="size-2 rounded-full" style={{ background: colorOf(String(entry.dataKey)) }} aria-hidden />
-                        <span className="text-muted-foreground">{config[String(entry.dataKey)]?.label}</span>
-                        <span className="ml-auto font-medium">{formatTooltip(Number(entry.value))}</span>
-                      </span>
-                    ))}
-                  </div>
-                );
-              }}
-            />
-            {active.map((v) => (
-              <Line
-                key={v.key}
-                type="monotone"
-                dataKey={v.key}
-                stroke={colorOf(v.key)}
-                strokeWidth={2}
-                dot={false}
-                connectNulls
-                isAnimationActive={false}
+        <div {...zoomDrag.containerProps}>
+          <ChartContainer config={config} className="aspect-auto h-64 w-full min-w-0" initialDimension={{ width: 300, height: 256 }}>
+            <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} {...zoomDrag.chartProps}>
+              <CartesianGrid vertical={false} stroke="var(--border)" />
+              {zoomDrag.selection ? (
+                <ReferenceArea x1={zoomDrag.selection.start} x2={zoomDrag.selection.end} fill="var(--foreground)" fillOpacity={0.12} />
+              ) : null}
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                minTickGap={24}
+                tick={{ fontSize: 11 }}
+                tickFormatter={(d: string) => formatAxisDate(d, spec.frequency)}
               />
-            ))}
-          </LineChart>
-        </ChartContainer>
+              <YAxis
+                width={72}
+                tickLine={false}
+                axisLine={false}
+                domain={yDomain}
+                ticks={yTicks}
+                tick={{ fontSize: 11 }}
+                tickFormatter={formatY}
+              />
+              {spec.mode !== "level" ? (
+                <ReferenceLine y={spec.mode === "index100" ? 100 : 0} stroke="var(--muted-foreground)" strokeDasharray="4 4" />
+              ) : null}
+              <Tooltip
+                cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1, strokeDasharray: "3 3" }}
+                content={({ active: isActive, payload, label }) => {
+                  if (!isActive || !payload?.length) return null;
+                  return (
+                    <div className="flex flex-col gap-1 rounded-md border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-sm">
+                      <span className="text-muted-foreground">
+                        {spec.frequency === "monthly" ? formatMonth(String(label)) : formatDate(String(label))}
+                      </span>
+                      {payload.map((entry) => (
+                        <span key={String(entry.dataKey)} className="flex items-center gap-2">
+                          <span className="size-2 rounded-full" style={{ background: colorOf(String(entry.dataKey)) }} aria-hidden />
+                          <span className="text-muted-foreground">{config[String(entry.dataKey)]?.label}</span>
+                          <span className="ml-auto font-medium">{formatTooltip(Number(entry.value))}</span>
+                        </span>
+                      ))}
+                    </div>
+                  );
+                }}
+              />
+              {active.map((v) => (
+                <Line
+                  key={v.key}
+                  type="monotone"
+                  dataKey={v.key}
+                  stroke={colorOf(v.key)}
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls
+                  isAnimationActive={false}
+                />
+              ))}
+            </LineChart>
+          </ChartContainer>
+        </div>
       ) : (
         <p className="py-10 text-center text-sm text-muted-foreground">Elegí al menos una variable para ver el gráfico.</p>
       )}
+
+      <ZoomBar window={zoom} onReset={() => setZoom(null)} format={(date) => formatAxisDate(date, spec.frequency)} />
 
       <CorrelationMatrix id={id} spec={spec} active={active} />
 

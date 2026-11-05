@@ -34,10 +34,10 @@ Objective: zoom into a period on the series charts, with the Y scale refitting t
 
 | ID | Specs | Route | Status | Commit |
 |----|-------|-------|--------|--------|
-| T1 | S2, S3, S6 | inline | pending | |
-| T2 | S1, S2, S3, S4, S6 | inline | pending | |
-| T3 | S1, S2, S4, S5, S6 | inline | pending | |
-| T4 | S1, S2, S3, S6 | inline | pending | |
+| T1 | S2, S3, S6 | inline | done | 1383999 |
+| T2 | S1, S2, S3, S4, S6 | inline | done | 26717cd |
+| T3 | S1, S2, S4, S5, S6 | inline | done | d8dac51 |
+| T4 | S1, S2, S3, S6 | inline | done | see L8 |
 | T5 | S1-S6 | inline | pending | |
 
 - **T1:** shared zoom pieces with tests: pure window helpers in lib, a mouse-only drag hook, the reset control and the range slider.
@@ -57,3 +57,21 @@ Route evidence: no Writer trigger holds. The units depend on T1 and are written 
   - Recharts 3 chart mouse handlers receive `activeLabel`.
   - Marks are snapped to axis dates by `spansOnAxis` in `src/lib/indicators/marks.ts`, so they must be recomputed on the visible dates.
   - The layout sets no viewport scale limits.
+- **L5:** T1 done (1383999).
+  - Pure window helpers have 9 tests.
+  - Drag starts only with the mouse (pointerType); touch uses the slider.
+- **L6:** T2 done (26717cd). CDP check on /historico?desde=2016-01&hasta=2026-11:
+  - **Mouse drag:** zoom to "diciembre de 2021 – febrero de 2025"; X ticks 2022-2025; Y refits from "$ 0 … $ 1.600" to "$ 200 … $ 1.200" (zoomed linear charts now use a tight domain, because the library anchored them at zero).
+  - **Double click:** resets.
+  - **Slider with keyboard:** zooms.
+  - **Touch drag and double tap** (mobile emulation with touch): no zoom, and the page scrolls.
+  - **Marks:** placed again with `placeAgain` (tested).
+  - **Test artifact:** a horizontal touch swipe without touch emulation triggered Chrome history-back; the history is now reset before checks.
+  - **Advisory, pre-existing in prod:** the Recharts focus box shows on mouse press.
+- **L7:** T3 done (d8dac51). CDP check on /panel: a drag on the featured chart zooms all 9 charts ("Zoom: marzo de 2024 – abril de 2025"); "Restablecer zoom" resets; touch does not zoom. The KPI cards keep the period values.
+- **L8:** T4 done. CDP check on / (first comparison chart, "Comparar cotizaciones"):
+  - **Mouse drag:** "Zoom: 24/09 – 21/10"; X ticks 27/09-21/10; Y refits from "$ 1.500 … $ 1.700" to "$ 1.540 … $ 1.620".
+  - **Double click:** resets.
+  - **Touch drag and double tap:** no zoom, and the page scrolls.
+  - The header period and the correlation matrix keep describing all loaded points (n = 63), like assumption 1.
+- **Open:** the period stats (variation, min, max) still describe the selected period while zoomed. Ask the user at closure (assumption 1).
