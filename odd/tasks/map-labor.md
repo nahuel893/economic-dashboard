@@ -22,7 +22,7 @@ Delivery: exception-ok. Each worktree branch is one slice, merged into `feat/map
 | ID | Specs | Route | Status | Commit |
 |----|-------|-------|--------|--------|
 | T1 | S1, S2 | delegated (parallel with T2, worktree `map-employment`) | pending | |
-| T2 | S1, S3 | delegated (parallel with T1, worktree `map-eph-rates`) | pending | |
+| T2 | S1, S3 | delegated (parallel with T1, worktree `map-eph-rates`) | done | 2c6366e (+ doc commit) |
 | T3 | S1-S3 | inline | pending | |
 
 - **T1:** OEDE registered employment by area: source, parser and tests, KPI entry, references and README.
@@ -36,3 +36,4 @@ Route evidence: the user asked for two parallel writers in two worktrees. The un
 - **L1 (2026-11-05), user:** "si dividi en 2 subagentes sonnet 5.5 esa tarea. Que lo trabajen en 2 wt. https://datos.produccion.gob.ar/dataset/sepa-precios luego necesito que planifiquemos otra oja con datos de precios de articulos."
   - The SEPA prices sheet is a separate feature, planned later. It is not part of this document.
 - **L2:** Sources come from the Engram research `maps/data-sources`. OEDE publishes registered employment by province in an XLSX like the wages one. The EPH labor report `cuadros_eph_informe_09_26.xls` already feeds unemployment from Cuadro 1.8.
+- T2 (map-eph-rates): INDEC workbook cuadros_eph_informe_09_26.xls has activity (Cuadro 1.6) and employment (1.7) by aglomerado in the same layout as 1.8; no CV is published for them. New snapshot eph-rates.json; poverty and unemployment snapshots regenerate byte-identical. Tests 168 passed, lint clean, tsc clean after typegen; `/mapas?kpi=actividad[&valor=empleo]` returned 200 with the expected labels on `next dev` (`pnpm build` fails on `/` before and after this change, Invalid time value in hot tiles).
