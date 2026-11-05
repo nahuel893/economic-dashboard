@@ -27,8 +27,8 @@ Objective: a Mapas tab with one navigable map and selectable KPIs (wages, povert
 | T1 | S1, S3 | inline | done | f7cb616 |
 | T2 | S1, S2, S4 | delegated (parallel with T3) | done | see L9 |
 | T3 | S2, S3, S5 | delegated (parallel with T2) | done | eb55b87 |
-| T4 | S1-S6 | delegated (context backstop) | pending | |
-| T5 | S1-S7 | inline | pending | |
+| T4 | S1-S6 | delegated (context backstop) | done | 954d56d, 65a427e |
+| T5 | S1-S7 | inline | done | see L11 |
 
 - **T0:** switch from npm to pnpm. The user asked "podes migrar a npx?", then "perdon, mejor diche pnpm".
 - **T1:** dependencies: maplibre-gl, react-map-gl, read-excel-file.
@@ -82,3 +82,17 @@ Route evidence:
     - Poverty covers 2026-H1 only (four variants with CV). Older releases flag CV > 16 % instead of the exact CV, so they are left for later.
     - Unemployment comes from Cuadro 1.8, for 12 quarters from 2023-Q3 to 2026-Q2. INDEC's "///" cells are omitted.
   - **Citations:** moved to T4, because `references.ts` must change with them.
+- **L10:** T4 done (954d56d, 65a427e). The writer's checks passed: typegen, tsc, lint, tests and build. Its open questions: wages as the default KPI, and the INDEC documentation link.
+  - **Parent browser check (CDP, production build)** found two defects that the writer, working without a browser, could not see:
+    - **Blank map.** The MapLibre worker URL resolved next to the bundled chunk and returned HTML. Fixed with an explicit `setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url))`. A differential check showed that without the line the worker fails, and with it the map draws.
+    - **Clipped tooltip on phones.** On a 390 px screen the tooltip ran off the right edge. On maps narrower than 520 px it is now pinned to the top-left corner.
+  - **Also fixed:** the basemap's English "South Georgia…" label is now hidden like the Malvinas one (test first: RED, then GREEN).
+- **L11:** T5. README documents the Mapas tab, its sources and both refresh scripts. Final CDP check on the production build:
+  - **Desktop wages:** hover over San Luis shows "$ 2.761.629 junio de 2026 · OEDE (SIPA) ⚠ Incluye aguinaldo". The legend has 5 classes, and the "Islas Malvinas" label and outlines show.
+  - **Inflation year-on-year:** "Región Cuyo (San Luis) 33,4 % agosto de 2026".
+  - **Poverty:** "Gran Córdoba 31,1 %, 1.er semestre de 2026". High-CV points are ringed.
+  - **Unemployment:** "Comodoro Rivadavia 9,2 % 2.º trimestre de 2026".
+  - **Invalid params** (`?kpi=xxx&periodo=1999-01`) fall back to wages, June 2026.
+  - **Phone (390x844, touch):** the map takes 60 % of the viewport. A tap shows the tooltip inside the map, and a finger swipe outside closes it.
+  - No console errors. 167 tests, tsc and lint pass. /, /panel, /historico and /mapas return 200.
+  - **Advisory:** MapLibre shows the compact attribution expanded on load.
