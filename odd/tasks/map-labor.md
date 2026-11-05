@@ -21,7 +21,7 @@ Delivery: exception-ok. Each worktree branch is one slice, merged into `feat/map
 
 | ID | Specs | Route | Status | Commit |
 |----|-------|-------|--------|--------|
-| T1 | S1, S2 | delegated (parallel with T2, worktree `map-employment`) | pending | |
+| T1 | S1, S2 | delegated (parallel with T2, worktree `map-employment`) | done | 87d09c1 |
 | T2 | S1, S3 | delegated (parallel with T1, worktree `map-eph-rates`) | pending | |
 | T3 | S1-S3 | inline | pending | |
 
@@ -36,3 +36,4 @@ Route evidence: the user asked for two parallel writers in two worktrees. The un
 - **L1 (2026-11-05), user:** "si dividi en 2 subagentes sonnet 5.5 esa tarea. Que lo trabajen en 2 wt. https://datos.produccion.gob.ar/dataset/sepa-precios luego necesito que planifiquemos otra oja con datos de precios de articulos."
   - The SEPA prices sheet is a separate feature, planned later. It is not part of this document.
 - **L2:** Sources come from the Engram research `maps/data-sources`. OEDE publishes registered employment by province in an XLSX like the wages one. The EPH labor report `cuadros_eph_informe_09_26.xls` already feeds unemployment from Cuadro 1.8.
+- **L3 (T1, S1-S2):** OEDE publishes provincial employment per quarter (`provinciales_serie_empleo_trimestral_2dig_7.xlsx`, one sheet per province, TOTAL row), not per month, so the KPI is quarterly (12 quarters, year-on-year needs 4 more). Verified: `pnpm test` 179 passed, `pnpm lint` clean, `tsc --noEmit` clean, `/mapas?kpi=empleo` and `&valor=puestos` render with real data on `next dev`; `pnpm build` fails on `/` (Invalid time value in hot tiles) also at the base commit. Commit 87d09c1.

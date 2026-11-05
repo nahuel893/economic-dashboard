@@ -73,16 +73,18 @@ One line chart per variable (dollars, gap, inflation, economic activity, country
 
 ### Mapas: where things happen
 
-One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a KPI selector, its value variants and a period selector that starts at the latest data. KPI, value and period live in the URL (`?kpi=pobreza&valor=hogares&periodo=2026-s1`).
+One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a KPI selector, its value variants and a period selector that starts at the latest data. KPI, value and period live in the URL (`?kpi=pobreza&valor=hogares&periodo=2026-s1`; employment is `?kpi=empleo`, with `valor=variacion` by default or `valor=puestos`).
 
 | KPI | Drawn on | Periods |
 |-----|----------|---------|
 | Average registered private wage (OEDE) | Provinces; Buenos Aires split into the 24 GBA partidos and the rest | Monthly; June and December include the aguinaldo |
+| Registered private employment, year-on-year % change or number of jobs (OEDE) | Provinces, split like the wages | Quarterly |
 | Poverty and indigence, % of persons or households (INDEC, EPH) | The 31 EPH urban areas as points | Half-yearly |
 | Inflation, monthly and year-on-year (INDEC) | The 6 INDEC regions | Monthly |
 | Unemployment rate (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
 
 - Each value is shown where its source measures it: INDEC publishes poverty and unemployment only for urban areas, never by province, so they are points. Survey estimates with a coefficient of variation above 16 % carry a "usar con cuidado" mark.
+- OEDE publishes provincial employment per quarter, not per month, in a workbook with one sheet per province; the map reads the TOTAL row of each and computes the year-on-year change itself.
 - Hover or tap a place for its value, period and source; a table under the map lists the same values.
 - The Malvinas, the other South Atlantic islands and the Antarctic sector are drawn as outlines with the map's own "Islas Malvinas" label.
 - Ctrl + wheel (or two fingers) moves the map, so it never takes over the page scroll.
@@ -97,7 +99,7 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 | [INDEC via datos.gob.ar](https://datos.gob.ar/series) | Economic activity (EMAE) |
 | [BCRA, Estadísticas v4](https://www.bcra.gob.ar/en/central-bank-api-catalog/) | Reserves, money, rates, REM, indexes, exchange-rate band |
 | [BYMA open data](https://open.bymadata.com.ar) | Merval |
-| [OEDE, Ministerio de Capital Humano](https://www.argentina.gob.ar/node/142211) | Wages by province (Mapas) |
+| [OEDE, Ministerio de Capital Humano](https://www.argentina.gob.ar/node/142211) | Wages (monthly) and registered employment (quarterly) by province (Mapas) |
 | [INDEC, EPH](https://www.indec.gob.ar) | Poverty, indigence and unemployment by urban area (Mapas) |
 | [IGN via georef](https://datosgobar.github.io/georef-ar-api/) and [OpenFreeMap](https://openfreemap.org) | Boundaries and basemap (Mapas) |
 

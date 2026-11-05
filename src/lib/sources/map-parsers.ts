@@ -96,10 +96,64 @@ export function parseOedeWages(rows: Row[], months: number): MapSeries {
 
 const OEDE_ORIGIN = "https://www.argentina.gob.ar";
 
-/** The current monthly 2-digit wage workbook linked from the OEDE index page; its numeric suffix changes. */
-export function findWageWorkbookUrl(html: string): string | null {
-  const path = html.match(/\/sites\/default\/files\/provinciales_serie_remuneraciones_mensual_2dig_\d+\.xlsx/)?.[0];
+/** The current workbook of a file series (`stem_<n>.xlsx`) linked from the OEDE index page; its numeric suffix changes. */
+export function findOedeWorkbookUrl(html: string, stem: string): string | null {
+  const path = html.match(new RegExp(`/sites/default/files/${stem}_\\d+\\.xlsx`))?.[0];
   return path ? `${OEDE_ORIGIN}${path}` : null;
+}
+
+/** The current monthly 2-digit wage workbook. */
+export const findWageWorkbookUrl = (html: string) => findOedeWorkbookUrl(html, "provinciales_serie_remuneraciones_mensual_2dig");
+
+/**
+ * Registered private employment by area from the OEDE quarterly workbook, which
+ * has one sheet per province (Buenos Aires split in "Partidos de GBA", "CABA"
+ * and "Resto de Buenos Aires", the same split as the wages) with the jobs of
+ * every quarter on a TOTAL row. `sheets` holds the rows of each area's sheet,
+ * keyed by area. Returns the number of jobs and the year-on-year % change, both
+ * keeping the last `quarters` quarters that have data (the change needs the
+ * four quarters before the first one).
+ */
+export function parseOedeEmployment(
+  sheets: Record<string, Row[]>,
+  quarters: number,
+): { jobs: MapSeries; yearOnYear: MapSeries } {
+  const jobsByArea = new Map<string, Map<string, number>>();
+  for (const { id } of AREAS) {
+    const rows = sheets[id];
+    if (!rows) throw new Error(`OEDE employment: no sheet for ${id}`);
+    const header = rows.findIndex((row) => label(row[1])?.trim().toLowerCase() === "ramas de actividad");
+    if (header < 0) throw new Error(`OEDE employment: header row not found in the sheet of ${id}`);
+    const total = rows.find((row) => label(row[1]) !== null && normalizeLabel(label(row[1])!) === "total");
+    if (!total) throw new Error(`OEDE employment: TOTAL row not found in the sheet of ${id}`);
+    const jobs = new Map<string, number>();
+    rows[header].forEach((cell, index) => {
+      const quarter = typeof cell === "string" ? cell.match(/(\d)\D*Trim\D*(\d{4})/i) : null;
+      const value = number(total[index]);
+      if (quarter && value !== null) jobs.set(`${quarter[2]}-Q${quarter[1]}`, value);
+    });
+    jobsByArea.set(id, jobs);
+  }
+
+  const toSeries = (valueOf: (jobs: Map<string, number>, period: string) => number | null): MapSeries => {
+    const byPeriod = new Map<string, Record<string, MapValue>>();
+    for (const [area, jobs] of jobsByArea) {
+      for (const period of jobs.keys()) {
+        const value = valueOf(jobs, period);
+        if (value !== null) byPeriod.set(period, { ...byPeriod.get(period), [area]: { value } });
+      }
+    }
+    const periods = [...byPeriod].sort(([a], [b]) => a.localeCompare(b)).slice(-quarters);
+    return { periods: periods.map(([period, values]) => ({ period, values })) };
+  };
+
+  return {
+    jobs: toSeries((jobs, period) => jobs.get(period) ?? null),
+    yearOnYear: toSeries((jobs, period) => {
+      const before = jobs.get(`${Number(period.slice(0, 4)) - 1}${period.slice(4)}`);
+      return before ? (jobs.get(period)! / before - 1) * 100 : null;
+    }),
+  };
 }
 
 /* ----------------------------------- IPC ---------------------------------- */

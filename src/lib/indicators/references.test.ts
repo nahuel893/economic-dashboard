@@ -5,7 +5,7 @@ vi.mock("next/cache", () => ({ cacheLife: vi.fn() }));
 import { citationParts } from "@/lib/sources/citations";
 import { INDEC_SERIES, SOURCES } from "@/lib/sources/clients";
 import { MACRO_SOURCES } from "./macro";
-import { IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
+import { EMPLOYMENT_URL, IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
 import povertySnapshot from "@/lib/sources/snapshots/eph-poverty.json";
 import unemploymentSnapshot from "@/lib/sources/snapshots/eph-unemployment.json";
 import { REGIONS } from "./geography";
@@ -74,8 +74,8 @@ describe("mapsReferences", () => {
     for (const ref of refs) expect(citationParts(ref.name)).toEqual([{ name: ref.name, id: ref.id }]);
   });
 
-  it("links the wage workbook and the INDEC files the snapshots were built from", () => {
-    expect(urls("oede")).toEqual([WAGES_URL]);
+  it("links the OEDE wage and employment workbooks and the INDEC files the snapshots were built from", () => {
+    expect(urls("oede")).toEqual([WAGES_URL, EMPLOYMENT_URL]);
     expect(urls("indecEph")).toEqual([...povertySnapshot.sources, ...unemploymentSnapshot.sources]);
   });
 

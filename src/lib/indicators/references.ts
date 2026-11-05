@@ -4,7 +4,7 @@
  */
 import { SOURCE_NAMES, type SourceId } from "@/lib/sources/citations";
 import { BCRA_VARIABLES, INDEC_SERIES } from "@/lib/sources/clients";
-import { IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
+import { EMPLOYMENT_URL, IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
 import povertySnapshot from "@/lib/sources/snapshots/eph-poverty.json";
 import unemploymentSnapshot from "@/lib/sources/snapshots/eph-unemployment.json";
 import { REGIONS } from "./geography";
@@ -86,7 +86,7 @@ const base = {
     name: SOURCE_NAMES.oede,
     title: "Observatorio de Empleo y Dinámica Empresarial (OEDE), Ministerio de Capital Humano, con datos del SIPA",
     url: "https://www.argentina.gob.ar/node/142211",
-    description: "Remuneraciones de los asalariados registrados del sector privado, por provincia, desde 1995.",
+    description: "Remuneraciones y empleo de los asalariados registrados del sector privado, por provincia.",
   },
   indecEph: {
     id: "indecEph",
@@ -199,9 +199,14 @@ export function mapsReferences(): Reference[] {
           detail: fileName(WAGES_URL),
           url: WAGES_URL,
         },
+        {
+          label: "Puestos de trabajo asalariados registrados del sector privado, por provincia (fila «TOTAL» de cada hoja)",
+          detail: fileName(EMPLOYMENT_URL),
+          url: EMPLOYMENT_URL,
+        },
       ],
-      update: "Se consulta una vez por día; el OEDE actualiza el archivo cada mes.",
-      note: "Pesos corrientes, sin ajustar por inflación. Junio y diciembre incluyen el aguinaldo. El OEDE separa la Ciudad, los partidos del Gran Buenos Aires y el resto de la provincia.",
+      update: "Se consulta una vez por día; el OEDE actualiza los salarios cada mes y el empleo cada trimestre.",
+      note: "Salarios en pesos corrientes, sin ajustar por inflación; junio y diciembre incluyen el aguinaldo. La variación interanual del empleo la calcula este tablero contra el mismo trimestre del año anterior. El OEDE separa la Ciudad, los partidos del Gran Buenos Aires y el resto de la provincia.",
     },
     {
       ...base.indecEph,
