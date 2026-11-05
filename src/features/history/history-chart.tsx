@@ -20,7 +20,8 @@ export type HistorySummary = {
   change: number | null;
 };
 
-export type AxisLabels = "day" | "month" | "year";
+import type { AxisLabels } from "@/lib/indicators/zoom";
+export type { AxisLabels };
 
 /** A span of an active mark layer; `row` stacks the labels of different layers. */
 export type ChartMark = AxisSpan & { layer: MarkLayerKey; row: number };

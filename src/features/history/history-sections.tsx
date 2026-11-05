@@ -3,10 +3,11 @@ import { Section } from "@/components/dashboard/section";
 import { toneVar, VARIABLE_TONES, type Tone } from "@/components/dashboard/tones";
 import { UnavailableTile } from "@/components/dashboard/stat-tile";
 import type { HistoryGroupId, HistorySnapshot, HistoryVariable } from "@/lib/indicators/history-data";
-import { downsample, granularityFor, inRange, monthsIn, periodChange, type MonthRange } from "@/lib/indicators/history";
+import { downsample, granularityFor, inRange, periodChange, type MonthRange } from "@/lib/indicators/history";
 import { MARK_LAYERS, spansOnAxis, type MarkLayerKey } from "@/lib/indicators/marks";
 import type { Point } from "@/lib/indicators/types";
-import { HistoryChart, type AxisLabels, type ChartMark, type HistorySummary } from "./history-chart";
+import { axisLabelsFor } from "@/lib/indicators/zoom";
+import { HistoryChart, type ChartMark, type HistorySummary } from "./history-chart";
 
 const GROUP_TONES: Record<HistoryGroupId, Tone> = {
   dollars: "dollars",
@@ -22,11 +23,6 @@ function summarize(points: Point[], change: HistoryVariable["change"]): HistoryS
   const min = points.reduce((a, b) => (b.value < a.value ? b : a));
   const max = points.reduce((a, b) => (b.value > a.value ? b : a));
   return { last: points.at(-1)!, min, max, change: periodChange(points, change) };
-}
-
-function axisFor(range: MonthRange): AxisLabels {
-  const months = monthsIn(range);
-  return months <= 6 ? "day" : months <= 36 ? "month" : "year";
 }
 
 /** The spans of every active layer, placed on this chart's dates; each layer labels its own row. */
@@ -76,7 +72,7 @@ function VariableChart({ variable, range, marks }: VariableChartProps) {
         unit={variable.unit}
         frequency={variable.frequency}
         granularity={granularity}
-        axis={axisFor(range)}
+        axis={axisLabelsFor(range.from, range.to)}
         change={variable.change}
         logScale={variable.logScale}
         points={chartPoints}
