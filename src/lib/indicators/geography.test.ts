@@ -14,6 +14,10 @@ const GEO_DIR = join(process.cwd(), "public", "geo");
 const readFeatures = (file: string): Feature[] => JSON.parse(readFileSync(join(GEO_DIR, file), "utf8")).features;
 const areas = readFeatures("areas.json");
 const outlines = readFeatures("outlines.json");
+const departments = readFeatures("departments.json");
+const departmentPlaces: { id: string; name: string; labelAt: Position }[] = JSON.parse(
+  readFileSync(join(process.cwd(), "src", "lib", "sources", "snapshots", "department-places.json"), "utf8"),
+);
 
 const positions = (geometry: Geometry): Position[] =>
   geometry.type === "Point"
@@ -97,4 +101,38 @@ describe("MAP_BOUNDS", () => {
 it("keeps both geography files within about 200 KB together", () => {
   const bytes = ["areas.json", "outlines.json"].reduce((sum, file) => sum + statSync(join(GEO_DIR, file)).size, 0);
   expect(bytes).toBeLessThanOrEqual(200 * 1024);
+});
+
+describe("departments.json", () => {
+  it("has one polygon per georef department, without the Antarctic sector and the South Atlantic islands", () => {
+    const ids = departments.map((f) => f.properties.id);
+    expect(ids).toHaveLength(527);
+    expect(new Set(ids).size).toBe(527);
+    expect(ids).not.toContain("94028");
+    expect(ids).not.toContain("94021");
+    for (const feature of departments) {
+      expect(feature.properties.id).toMatch(/^\d{5}$/);
+      expect(["Polygon", "MultiPolygon"]).toContain(feature.geometry.type);
+    }
+  });
+
+  it("fills only Isla Grande for the Tierra del Fuego departments", () => {
+    const lats = latitudes(departments.filter((f) => f.properties.id.startsWith("94")));
+    expect(Math.min(...lats)).toBeGreaterThan(-55.2);
+    expect(Math.max(...lats)).toBeLessThan(-52.4);
+    expect(Math.max(...longitudes(departments.filter((f) => f.properties.id.startsWith("94"))))).toBeLessThan(-65);
+  });
+
+  it("puts each department's label inside that department", () => {
+    expect(departmentPlaces.map((p) => p.id).sort()).toEqual(departments.map((f) => f.properties.id).sort());
+    for (const place of departmentPlaces) {
+      const feature = departments.find((f) => f.properties.id === place.id)!;
+      expect(feature.properties.name, place.id).toBe(place.name);
+      expect(contains(feature.geometry, place.labelAt), place.id).toBe(true);
+    }
+  });
+
+  it("stays within about 400 KB", () => {
+    expect(statSync(join(GEO_DIR, "departments.json")).size).toBeLessThanOrEqual(400 * 1024);
+  });
 });

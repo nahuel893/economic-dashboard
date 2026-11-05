@@ -3,6 +3,10 @@
 //   public/geo/areas.json     one filled polygon per AreaId in AREAS
 //   public/geo/outlines.json  the parts of IGN feature 94 that are not filled,
 //                             plus a label point for the Malvinas
+//   public/geo/departments.json  one filled polygon per department (partido, comuna), drawn only
+//                             by the Census KPI
+//   src/lib/sources/snapshots/department-places.json  id, name and a label point inside each
+//                             department, so the page does not load the polygons to list them
 //
 // Run from the repository root (the flag only silences the notice Node prints
 // when it loads the typed geography module):
@@ -23,6 +27,7 @@ const SOURCES = {
   departments: "https://infra.datos.gob.ar/georef/departamentos.geojson",
 };
 const OUT_DIR = resolve("public/geo");
+const PLACES_PATH = resolve("src/lib/sources/snapshots/department-places.json");
 
 // Simplification. Filled areas keep ~250 m detail, enough for the GBA
 // boundary at city zoom; the unfilled outlines only need country zoom.
@@ -30,10 +35,17 @@ const AREAS_INTERVAL = "250m";
 const OUTLINES_INTERVAL = "2000m";
 const OUTLINES_MIN_AREA = "30km2";
 const PRECISION = "0.0001"; // about 11 m
+// Departments are only loaded for the Census KPI and are read at province zoom.
+const DEPARTMENTS_INTERVAL = "1800m";
 
 // A point inside Isla Grande de Tierra del Fuego (near Tolhuin), to pick it
 // among the polygons of IGN feature 94.
 const ISLA_GRANDE = [-67.2, -54.5];
+// The same, inside the Ushuaia department's part of Isla Grande (the city).
+const USHUAIA_ISLA_GRANDE = [-68.3, -54.8];
+// Departments left out of the fill: the Antarctic sector and the South Atlantic islands, which areas.json
+// and outlines.json draw as outlines (INDEC counts both under 94028).
+const UNFILLED_DEPARTMENTS = new Set(["94028", "94021"]);
 
 const normalize = (name) =>
   name.normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/\./g, "").replace(/\s+/g, " ").trim().toLowerCase();
@@ -120,6 +132,21 @@ function buildGbaInput(departments) {
   );
 }
 
+/** Every department but the unfilled ones; Ushuaia keeps only its part of Isla Grande, not the Beagle and Isla de los Estados islands. */
+function buildDepartmentsInput(departments) {
+  const features = [];
+  for (const { properties, geometry } of departments.features) {
+    if (UNFILLED_DEPARTMENTS.has(properties.id)) continue;
+    let polygons = polygonsOf(geometry);
+    if (properties.id === "94015") {
+      polygons = polygons.filter((polygon) => ringContains(polygon[0], USHUAIA_ISLA_GRANDE));
+      if (polygons.length !== 1) throw new Error(`Expected one Ushuaia polygon on Isla Grande, found ${polygons.length}`);
+    }
+    features.push(feature({ id: properties.id, name: properties.nombre }, polygons));
+  }
+  return collection(features);
+}
+
 function buildOutlinesInput(provinces) {
   const tierraDelFuego = provinces.features.find((p) => p.properties.id === "94");
   const groups = new Map();
@@ -138,6 +165,16 @@ function addMalvinasLabel(outlinesPath) {
   const center = [+((west + east) / 2).toFixed(2), +((south + north) / 2).toFixed(2)];
   outlines.features.push({ type: "Feature", properties: { name: "Islas Malvinas" }, geometry: { type: "Point", coordinates: center } });
   writeFileSync(outlinesPath, JSON.stringify(outlines));
+}
+
+/** Writes the label point mapshaper computed for each department next to its id and name. */
+function writePlaces(pointsPath) {
+  const { features } = JSON.parse(readFileSync(pointsPath, "utf8"));
+  const places = features
+    .map((f) => ({ id: f.properties.id, name: f.properties.name, labelAt: f.geometry.coordinates }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  writeFileSync(PLACES_PATH, `${JSON.stringify(places)}\n`);
+  console.log(`${PLACES_PATH}: ${places.length} places`);
 }
 
 function report(path) {
@@ -159,10 +196,12 @@ const departments = await download(scratch, "departamentos", SOURCES.departments
 const provincesInput = join(scratch, "provinces-input.geojson");
 const gbaInput = join(scratch, "gba-input.geojson");
 const outlinesInput = join(scratch, "outlines-input.geojson");
+const departmentsInput = join(scratch, "departments-input.geojson");
 writeFileSync(provincesInput, JSON.stringify(buildProvincesInput(provinces)));
 const gba = buildGbaInput(departments);
 writeFileSync(gbaInput, JSON.stringify(gba));
 writeFileSync(outlinesInput, JSON.stringify(buildOutlinesInput(provinces)));
+writeFileSync(departmentsInput, JSON.stringify(buildDepartmentsInput(departments)));
 
 mkdirSync(OUT_DIR, { recursive: true });
 const areasPath = join(OUT_DIR, "areas.json");
@@ -197,5 +236,19 @@ mapshaper([
 ]);
 addMalvinasLabel(outlinesPath);
 
+// georef simplified each department on its own, so -clean closes the gaps and overlaps before the shared
+// borders simplify as one line. Label points are the "inner" point of each simplified department.
+const departmentsPath = join(OUT_DIR, "departments.json");
+const labelPointsPath = join(scratch, "department-labels.geojson");
+mapshaper([
+  "-i", departmentsInput, "snap",
+  "-clean", "gap-width=300m",
+  "-simplify", `interval=${DEPARTMENTS_INTERVAL}`, "keep-shapes",
+  "-o", departmentsPath, "format=geojson", `precision=${PRECISION}`,
+]);
+mapshaper(["-i", departmentsPath, "-points", "inner", "-o", labelPointsPath, "format=geojson", `precision=${PRECISION}`]);
+writePlaces(labelPointsPath);
+
 report(areasPath);
 report(outlinesPath);
+report(departmentsPath);
