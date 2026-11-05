@@ -40,7 +40,7 @@ Delivery: exception-ok. Each worktree branch is one slice, merged into `feat/map
 | T5 | S1, S5 | delegated (parallel, worktree `map-exports`) | done | 1860a83 |
 | T6 | S1, S6 | delegated (parallel, worktree `map-deposits`) | done | 140139a, 1b4b473 |
 | T7 | S1, S7 | delegated (parallel, worktree `map-census`) | done | a5f046e, d1b1c5d |
-| T8 | S5-S7 | inline | pending | |
+| T8 | S5-S7 | inline | done | merges, 1fd054e, 104f7b6, 98bdd58 |
 
 - **T1:** OEDE registered employment by area: source, parser and tests, KPI entry, references and README.
 - **T2:** EPH activity and employment rates: extend the snapshot script, commit the snapshot, then the source, tests, KPI entry, references and README.
@@ -73,3 +73,15 @@ Route evidence: the user asked for two parallel writers in two worktrees. The un
 - T6 (feat/map-deposits): `?kpi=depositos` from BCRA `vol4_ser.txt` (last quarter 2026-Q1), Buenos Aires from the BCRA's own GBA/rest split, compact labels "$ 98,2 B"; `pnpm test` 197 passed, build, tsc and lint clean, `/mapas?kpi=depositos` (3 variants) 200 on port 3204.
 - T5 (map-exports): INDEC OPEX annex `opex_anexo_cuadros_02_09_26.xls`, sheet "Region-prov 2016-2026 semestre", read through a committed snapshot (`scripts/maps/opex-snapshot.mts`); first half of each year 2016-2026, Buenos Aires total on both `06-gba` and `06-resto` with a period note; `pnpm test` 197 passed, build, tsc and lint clean, `/mapas?kpi=exportaciones` (and `&valor=variacion`) returned 200 with real values.
 - **L9 (T7, S1, S7):** `?kpi=censo` with `poblacion` (default) and `densidad`, on a new `public/geo/departments.json` (527 fills, 365 KB; labels in `snapshots/department-places.json`). INDEC publishes no NBI table by department for the 2022 census (censo.gob.ar lists none), so there is no `nbi` variant. Data: INDEC definitive tables, one workbook per province, committed as `snapshots/census.json`; its sum plus the 81 people at the Antarctic bases equals INDEC's national total, 45,892,285. Georef's 94028 and 94021 are not drawn (INDEC counts both under 94028); no other code is unmatched. Tests 202 passed, tsc, lint and `pnpm build` clean, `/mapas?kpi=censo[&valor=densidad]` return 200 with real values on `pnpm start`. Not checked in a browser (CDP) by the writer.
+- **L10: T8 merge and fixes.** Deposits fast-forwarded, then exports and the census were merged; the conflicts were resolved as the union of both sides. KPI order: salarios, empleo, depositos, pobreza, inflacion, desocupacion, actividad, exportaciones, censo.
+  - **1fd054e:** peso labels spell out "billones", because a "B" reads as the English billion.
+  - **104f7b6:** a new `provinces` geometry, so OPEX's single Buenos Aires value fills the whole province once. Before, the same total sat on both halves and was counted twice in the color classes.
+  - **98bdd58:** the provisional-data note no longer shows a doubled period.
+  - **Checks:** 224 tests, tsc, lint and build pass.
+  - **CDP:** "Buenos Aires Millones de USD: US$ 15.965 M 1.er semestre de 2026 · INDEC, OPEX ⚠ Dato provisorio.", "San Luis Depósitos: $ 594,4 mil millones 1.er trimestre de 2026 · BCRA" and "General Roca (Córdoba) Densidad de población: 2,9 hab./km² 2022 · INDEC, Censo 2022". The census map draws 527 departments with labels. No console errors.
+  - **Advisories:**
+    - The census tables were downloaded once with certificate verification off, because censo.gob.ar does not send its intermediate certificate. The data is public and committed as a snapshot.
+    - The BCRA file layout is inferred and checked on every load.
+    - Per-person versions of exports and deposits are still open.
+  - Not pushed: it needs the user's approval.
+
