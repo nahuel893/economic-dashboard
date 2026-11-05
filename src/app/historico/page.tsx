@@ -46,7 +46,8 @@ export default function HistoryPage({ searchParams }: PageProps<"/historico">) {
         </h1>
         <p className="max-w-prose text-base text-muted-foreground">
           La historia de cada variable desde {HISTORY_FLOOR.slice(0, 4)}. Elegí el período con los botones o con el mes y
-          el año de inicio y de fin.
+          el año de inicio y de fin. Para acercarte a un tramo, arrastrá sobre el gráfico o mové la barra de abajo; doble
+          clic vuelve al período completo.
         </p>
       </header>
 

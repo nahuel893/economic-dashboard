@@ -47,6 +47,8 @@ No environment variables are needed: every source is a free, public API.
 
 The hot indicators refresh every 2 minutes in the browser. Each section ends with a comparison panel: a chart with selectable series (level, base 100 or change, depending on what the section measures) and a correlation matrix with 95 % confidence intervals.
 
+Dragging across a comparison chart with the mouse zooms into those dates and the Y axis refits to them; **Restablecer zoom** or a double click goes back. The correlations keep using every loaded point.
+
 ### Panel: the whole economy on one screen
 
 A dense, full-width dashboard in the style of a BI report: ten key indicators with their latest value, change over the period and a sparkline, a large chart of the selected indicator, and eight topic charts (dollars, gap, rates vs. inflation, activity, monthly inflation, country risk, reserves).
@@ -54,6 +56,7 @@ A dense, full-width dashboard in the style of a BI report: ten key indicators wi
 - One period filter drives every number and chart, and lives in the URL like on Histórico.
 - Clicking an indicator shows it in the large chart.
 - Every chart plots the close of each month, so daily and monthly series share one axis: hovering a month on any chart shows that month on all of them.
+- Dragging across any chart zooms every chart to the same months, with each Y axis refitted; on touch screens, the slider under the large chart does the same. The indicator cards keep showing the whole period.
 
 ### Histórico: the series over time
 
@@ -63,6 +66,8 @@ One line chart per variable (dollars, gap, inflation, economic activity, country
 
 - Long ranges show weekly or monthly closes; min, max and change are computed on every point.
 - Price-level series can switch to a log axis per chart; it is off by default.
+- Each chart zooms on its own: drag across it with the mouse, or move the slider under it (it works with a finger too). The axes and marks refit to the visible dates, and min, max and change keep describing the whole period. Double click or **Restablecer zoom** goes back; changing the period clears the zoom.
+- On phones, touch never zooms a chart, so scrolling and pinch-zooming the page work as usual.
 - **Exportar video** downloads a 10-second 1920×1080 animation of the chart as shown, with its window, scale and marks: the line draws itself with a bubble on its latest value, and value labels stay on the start of each period. It is recorded in the browser (MP4 where supported, WebM otherwise), so keep the tab visible while it records.
 - Optional marks add context to every chart and can be combined. The first layer, **Presidencias**, shades each presidential term from its inauguration day and names the president in the tooltip. Active layers are kept in the URL (`?marcas=presidencias`).
 

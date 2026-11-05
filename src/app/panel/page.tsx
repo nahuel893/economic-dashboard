@@ -43,7 +43,7 @@ export default function PanelPage({ searchParams }: PageProps<"/panel">) {
         <h1 className="text-3xl font-extrabold tracking-tight [font-stretch:125%]">Panel</h1>
         <p className="text-sm text-muted-foreground">
           El período vale para todo el tablero. Tocá un indicador para verlo en grande; el mouse marca el mismo mes en
-          todos los gráficos.
+          todos los gráficos. Arrastrá sobre un gráfico, o mové la barra del gráfico grande, para acercar todos a esos meses.
         </p>
       </header>
 

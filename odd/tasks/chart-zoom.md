@@ -37,8 +37,8 @@ Objective: zoom into a period on the series charts, with the Y scale refitting t
 | T1 | S2, S3, S6 | inline | done | 1383999 |
 | T2 | S1, S2, S3, S4, S6 | inline | done | 26717cd |
 | T3 | S1, S2, S4, S5, S6 | inline | done | d8dac51 |
-| T4 | S1, S2, S3, S6 | inline | done | see L8 |
-| T5 | S1-S6 | inline | pending | |
+| T4 | S1, S2, S3, S6 | inline | done | 238ebf4 |
+| T5 | S1-S6 | inline | done | see L9 |
 
 - **T1:** shared zoom pieces with tests: pure window helpers in lib, a mouse-only drag hook, the reset control and the range slider.
 - **T2:** Histórico charts. Marks and X-axis labels are recomputed on the visible dates, and the slider is added.
@@ -74,4 +74,10 @@ Route evidence: no Writer trigger holds. The units depend on T1 and are written 
   - **Double click:** resets.
   - **Touch drag and double tap:** no zoom, and the page scrolls.
   - The header period and the correlation matrix keep describing all loaded points (n = 63), like assumption 1.
+- **L9:** T5 done: README (Hoy, Panel, Histórico) and the Panel and Histórico intros describe the zoom. Final CDP check on the production build, all tabs:
+  - **S1-S3:** mouse drag zooms Histórico ("diciembre de 2021 – febrero de 2025", Y "$ 200 … $ 1.200"), Panel (all 9 charts, "marzo de 2024 – abril de 2025") and Hoy ("24/09 – 21/10", Y "$ 1.540 … $ 1.620"); double click or "Restablecer zoom" resets. No wheel handler in src.
+  - **S4:** the keyboard on the Histórico slider gives "mayo de 2019 – noviembre de 2026"; the Panel featured chart has the slider ("diciembre de 2021 – noviembre de 2025").
+  - **S5:** one Panel drag zooms every chart; the KPI cards are unchanged.
+  - **S6:** touch drag and double tap on Histórico and Hoy do not zoom and the page scrolls; no `touch-action` or viewport scale limits in src.
+  - Tests 112 passed, tsc and lint clean, build ok.
 - **Open:** the period stats (variation, min, max) still describe the selected period while zoomed. Ask the user at closure (assumption 1).
