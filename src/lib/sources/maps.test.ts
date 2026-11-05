@@ -8,7 +8,9 @@ vi.mock("./http", () => ({ fetchJson }));
 
 import { CACHE } from "./clients";
 import {
+  BCRA_BALANCES_URL,
   EMPLOYMENT_URL,
+  getDepositsMap,
   getEmploymentMap,
   getEphPovertyMap,
   getLaborRatesMap,
@@ -21,6 +23,7 @@ import {
 
 const workbook = readFileSync(new URL("./__fixtures__/oede-wages.xlsx", import.meta.url));
 const employmentWorkbook = readFileSync(new URL("./__fixtures__/oede-employment.xlsx", import.meta.url));
+const bcraBalances = readFileSync(new URL("./__fixtures__/bcra-vol4.txt", import.meta.url));
 const INDEX_URL = "https://www.argentina.gob.ar/node/142211";
 const CURRENT = "https://www.argentina.gob.ar/sites/default/files/provinciales_serie_remuneraciones_mensual_2dig_10.xlsx";
 
@@ -100,6 +103,21 @@ describe("map loaders", () => {
     });
     await expect(getEmploymentMap()).resolves.toMatchObject({ jobs: { periods: expect.any(Array) } });
     expect(fetchMock.mock.calls.at(-1)?.[0]).toBe(EMPLOYMENT_URL);
+  });
+
+  it("reads the BCRA provincial balances file and caches it", async () => {
+    const fetchMock = mockFetch({ [BCRA_BALANCES_URL]: () => new Response(bcraBalances) });
+    const { deposits, loans, ratio } = await getDepositsMap();
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([BCRA_BALANCES_URL]);
+    expect(deposits.periods.map((p) => p.period)).toEqual(["2025-Q1", "2025-Q4", "2026-Q1"]);
+    expect(loans.periods[2].values["02"].value).toBeGreaterThan(0);
+    expect(ratio.periods[2].values["94"].value).toBeGreaterThan(0);
+    expect(cacheLife).toHaveBeenCalledWith(CACHE.slow);
+  });
+
+  it("rejects when the BCRA file cannot be fetched", async () => {
+    mockFetch({ [BCRA_BALANCES_URL]: () => new Response("gone", { status: 404 }) });
+    await expect(getDepositsMap()).rejects.toThrow("GET www.bcra.gob.ar responded 404");
   });
 
   it("computes regional inflation from the six IPC level series", async () => {

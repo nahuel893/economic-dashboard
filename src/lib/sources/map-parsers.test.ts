@@ -1,9 +1,11 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { AGLOMERADOS, AREAS } from "@/lib/indicators/geography";
 import {
   ephPovertySeries,
   findWageWorkbookUrl,
   findOedeWorkbookUrl,
+  parseBcraProvinceBalances,
   parseEphQuarterly,
   parseOedeEmployment,
   parseOedeWages,
@@ -314,5 +316,44 @@ describe("findOedeWorkbookUrl", () => {
 
   it("returns null when the page does not link it", () => {
     expect(findOedeWorkbookUrl("<html></html>", "provinciales_serie_empleo_trimestral_2dig")).toBeNull();
+  });
+});
+
+describe("parseBcraProvinceBalances", () => {
+  const text = readFileSync(new URL("./__fixtures__/bcra-vol4.txt", import.meta.url), "utf8");
+
+  it("returns private deposits and loans by area and quarter in millions of pesos, pesos and dollars added", () => {
+    const { deposits, loans } = parseBcraProvinceBalances(text, 12);
+    expect(deposits.periods.map((p) => p.period)).toEqual(["2025-Q1", "2025-Q4", "2026-Q1"]);
+    // Series 20329 (pesos) and 20518 (dollars) are the city's private deposits, in thousands of pesos.
+    expect(deposits.periods[2].values["02"].value).toBeCloseTo((68155022989.5379 + 30066842464.8681) / 1000, -1);
+    expect(loans.periods[2].values["02"].value).toBeCloseTo((37096132424.2438 + 18123554359.0711) / 1000, -1);
+    expect(Object.keys(deposits.periods[2].values).sort()).toEqual(AREAS.map((a) => a.id).sort());
+  });
+
+  it("splits Buenos Aires into the BCRA's Gran Buenos Aires and the rest of the province", () => {
+    const { deposits } = parseBcraProvinceBalances(text, 12);
+    const { "06-gba": gba, "06-resto": resto } = deposits.periods[2].values;
+    expect(gba.value).toBeCloseTo((8389309151.1057 + 6526718801.59172) / 1000, -1);
+    expect(resto.value).toBeCloseTo((9308538091.83654 + 5141827050.67278) / 1000, -1);
+  });
+
+  it("computes loans as a percentage of deposits", () => {
+    const { deposits, loans, ratio } = parseBcraProvinceBalances(text, 12);
+    for (const id of ["02", "06-gba", "94"]) {
+      expect(ratio.periods[2].values[id].value).toBeCloseTo(
+        (loans.periods[2].values[id].value / deposits.periods[2].values[id].value) * 100,
+        8,
+      );
+    }
+  });
+
+  it("keeps only the last quarters asked for", () => {
+    expect(parseBcraProvinceBalances(text, 2).loans.periods.map((p) => p.period)).toEqual(["2025-Q4", "2026-Q1"]);
+  });
+
+  it("refuses a file whose provinces do not add up to the national total", () => {
+    const broken = text.split("\n").map((l) => (l.startsWith("20329;") ? l.replace(/;[^;]*$/, ";1") : l)).join("\n");
+    expect(() => parseBcraProvinceBalances(broken, 12)).toThrow(/do not add up/);
   });
 });

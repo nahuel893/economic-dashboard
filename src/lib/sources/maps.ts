@@ -11,6 +11,7 @@ import { attempt, CACHE, type Outcome, unwrap } from "./clients";
 import { fetchJson } from "./http";
 import {
   findOedeWorkbookUrl,
+  parseBcraProvinceBalances,
   parseOedeEmployment,
   parseOedeWages,
   type PovertySeries,
@@ -93,6 +94,17 @@ async function cachedEmploymentMap(): Promise<Outcome<{ jobs: MapSeries; yearOnY
 
 /** Registered private employment by area (OEDE/SIPA): jobs and their year-on-year change, quarterly. */
 export const getEmploymentMap = async () => unwrap(await cachedEmploymentMap());
+
+/** BCRA "Información por provincia" (disponibilidades, depósitos y préstamos), a plain-text series file with the whole history. */
+export const BCRA_BALANCES_URL = "https://www.bcra.gob.ar/archivos/Pdfs/PublicacionesEstadisticas/vol4_ser.txt";
+
+async function cachedDepositsMap(): Promise<Outcome<{ deposits: MapSeries; loans: MapSeries; ratio: MapSeries }>> {
+  "use cache";
+  return attempt(CACHE.slow, async () => parseBcraProvinceBalances(await (await fetchFile(BCRA_BALANCES_URL)).text(), QUARTERS));
+}
+
+/** Private-sector deposits and loans by area (BCRA), in millions of pesos, and loans as % of deposits, quarterly. */
+export const getDepositsMap = async () => unwrap(await cachedDepositsMap());
 
 /**
  * General-level IPC by region, base December 2016, monthly. The 148.3_* ids

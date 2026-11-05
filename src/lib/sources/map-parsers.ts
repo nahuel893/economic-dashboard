@@ -322,3 +322,79 @@ export function parseEphQuarterly(rows: Row[], quarters: number): MapSeries {
     }),
   };
 }
+
+/* ----------------------------------- BCRA ---------------------------------- */
+
+/**
+ * Unit order of the BCRA's "Información por provincia" series (vol4_ser.txt):
+ * seven consecutive series ids per unit starting at 20318, first all the units
+ * in pesos, then the same units in dollars (valued in pesos). The unit is
+ * the province where the bank branch sits. Buenos Aires comes as the whole
+ * province ("06") and again split in Gran Buenos Aires and the rest, which are
+ * the map's "06-gba" and "06-resto".
+ */
+const BCRA_UNITS = [
+  "total", "02", "06", "06-gba", "06-resto", "10", "14", "18", "22", "26", "30", "34", "38", "42", "46", "50", "54", "58",
+  "62", "66", "70", "74", "78", "82", "86", "94", "90",
+];
+const BCRA_FIRST_SERIES = 20318;
+const BCRA_SERIES_PER_UNIT = 7;
+/** Offsets within a unit: cash, public loans, public deposits, private loans, private deposits, foreign loans, foreign deposits. */
+const BCRA_PRIVATE_LOANS = 3;
+const BCRA_PRIVATE_DEPOSITS = 4;
+
+/** "31/03/2026" to "2026-Q1". */
+function bcraQuarter(date: string): string | null {
+  const [, month, year] = date.match(/^\d{2}\/(\d{2})\/(\d{4})$/) ?? [];
+  return month ? `${year}-Q${Math.ceil(Number(month) / 3)}` : null;
+}
+
+/**
+ * Private-sector deposits and loans by area from vol4_ser.txt (`id;dd/mm/yyyy;value`,
+ * balances at quarter end in thousands of pesos), pesos and foreign currency added,
+ * in millions of pesos, plus loans as % of deposits. Keeps the last `quarters`.
+ * The file has no labels, so the position of each unit is checked against the data:
+ * the provinces must add up to the national total, and Gran Buenos Aires plus the rest
+ * to the province; otherwise the file changed and this throws instead of mislabelling.
+ */
+export function parseBcraProvinceBalances(
+  text: string,
+  quarters: number,
+): { deposits: MapSeries; loans: MapSeries; ratio: MapSeries } {
+  const byQuarter = new Map<string, Map<number, number>>();
+  for (const line of text.split("\n")) {
+    const [id, date, value] = line.trim().split(";");
+    const period = bcraQuarter(date ?? "");
+    const amount = Number(value);
+    if (!period || !value || !Number.isFinite(amount)) continue;
+    byQuarter.set(period, (byQuarter.get(period) ?? new Map()).set(Number(id), amount));
+  }
+  const balance = (series: Map<number, number>, unit: number, offset: number) =>
+    [0, BCRA_UNITS.length].reduce(
+      (sum, shift) => sum + (series.get(BCRA_FIRST_SERIES + (unit + shift) * BCRA_SERIES_PER_UNIT + offset) ?? 0),
+      0,
+    );
+  const near = (a: number, b: number) => Math.abs(a - b) <= Math.abs(b) * 1e-3;
+
+  const result = { deposits: [] as MapPeriod[], loans: [] as MapPeriod[], ratio: [] as MapPeriod[] };
+  for (const [period, series] of [...byQuarter].sort(([a], [b]) => a.localeCompare(b)).slice(-quarters)) {
+    const periods = { deposits: {} as Record<string, MapValue>, loans: {} as Record<string, MapValue>, ratio: {} as Record<string, MapValue> };
+    for (const [offset, kind] of [[BCRA_PRIVATE_DEPOSITS, "deposits"], [BCRA_PRIVATE_LOANS, "loans"]] as const) {
+      const amounts = BCRA_UNITS.map((_, unit) => balance(series, unit, offset));
+      const at = (id: string) => amounts[BCRA_UNITS.indexOf(id)];
+      const provinces = BCRA_UNITS.reduce((sum, id, unit) => (id === "total" || id.startsWith("06-") ? sum : sum + amounts[unit]), 0);
+      if (!near(provinces, at("total")) || !near(at("06-gba") + at("06-resto"), at("06"))) {
+        throw new Error(`BCRA provincial balances for ${period} do not add up: the file layout changed`);
+      }
+      for (const { id } of AREAS) periods[kind][id] = { value: at(id) / 1000 };
+    }
+    for (const { id } of AREAS) {
+      const { deposits, loans } = { deposits: periods.deposits[id].value, loans: periods.loans[id].value };
+      if (deposits > 0) periods.ratio[id] = { value: (loans / deposits) * 100 };
+    }
+    result.deposits.push({ period, values: periods.deposits });
+    result.loans.push({ period, values: periods.loans });
+    result.ratio.push({ period, values: periods.ratio });
+  }
+  return { deposits: { periods: result.deposits }, loans: { periods: result.loans }, ratio: { periods: result.ratio } };
+}
