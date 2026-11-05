@@ -2,7 +2,7 @@
  * Short source names cited on cards and charts, and the anchors of their full
  * reference at the bottom of the page. Client-safe: no data fetching here.
  */
-export type SourceId = "dolarapi" | "argentinaDatos" | "bcra" | "indec" | "byma";
+export type SourceId = "dolarapi" | "argentinaDatos" | "bcra" | "indec" | "byma" | "oede" | "indecEph";
 
 export const SOURCE_NAMES: Record<SourceId, string> = {
   dolarapi: "dolarapi.com",
@@ -10,6 +10,8 @@ export const SOURCE_NAMES: Record<SourceId, string> = {
   bcra: "BCRA",
   indec: "INDEC vía datos.gob.ar",
   byma: "BYMA",
+  oede: "OEDE (SIPA)",
+  indecEph: "INDEC, EPH",
 };
 
 /** Separator between sources when one value combines several. */

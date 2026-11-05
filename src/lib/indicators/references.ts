@@ -4,6 +4,10 @@
  */
 import { SOURCE_NAMES, type SourceId } from "@/lib/sources/citations";
 import { BCRA_VARIABLES, INDEC_SERIES } from "@/lib/sources/clients";
+import { IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
+import povertySnapshot from "@/lib/sources/snapshots/eph-poverty.json";
+import unemploymentSnapshot from "@/lib/sources/snapshots/eph-unemployment.json";
+import { REGIONS } from "./geography";
 import { MACRO_SOURCES } from "./macro";
 
 export type ReferenceItem = { label: string; detail: string; url?: string };
@@ -76,6 +80,20 @@ const base = {
     title: "Bolsas y Mercados Argentinos (BYMA), datos abiertos",
     url: "https://open.bymadata.com.ar",
     description: "Precios de índices y valores negociados en BYMA, publicados en forma gratuita.",
+  },
+  oede: {
+    id: "oede",
+    name: SOURCE_NAMES.oede,
+    title: "Observatorio de Empleo y Dinámica Empresarial (OEDE), Ministerio de Capital Humano, con datos del SIPA",
+    url: "https://www.argentina.gob.ar/node/142211",
+    description: "Remuneraciones de los asalariados registrados del sector privado, por provincia, desde 1995.",
+  },
+  indecEph: {
+    id: "indecEph",
+    name: SOURCE_NAMES.indecEph,
+    title: "INDEC, Encuesta Permanente de Hogares (EPH)",
+    url: "https://www.indec.gob.ar/indec/web/Nivel4-Tema-4-46-152",
+    description: "Encuesta a hogares de 31 aglomerados urbanos. Sus resultados son estimaciones con error de muestreo.",
   },
 } as const satisfies Record<SourceId, Omit<Reference, "items" | "update" | "note">>;
 
@@ -163,6 +181,53 @@ export function historyReferences(): Reference[] {
       ...base.bcra,
       items: [bcraItem("Reservas internacionales", BCRA_VARIABLES.reserves), bcraItem("BADLAR bancos privados", BCRA_VARIABLES.badlar)],
       update: "Se consulta cada hora.",
+    },
+  ];
+}
+
+/** The last segment of a file URL, as the detail of its reference item. */
+const fileName = (url: string) => url.slice(url.lastIndexOf("/") + 1);
+
+/** References of "Mapas", in the order of its indicators: wages, poverty and unemployment, inflation. */
+export function mapsReferences(): Reference[] {
+  return [
+    {
+      ...base.oede,
+      items: [
+        {
+          label: "Remuneración promedio de los asalariados registrados del sector privado, por provincia (hoja «Total»)",
+          detail: fileName(WAGES_URL),
+          url: WAGES_URL,
+        },
+      ],
+      update: "Se consulta una vez por día; el OEDE actualiza el archivo cada mes.",
+      note: "Pesos corrientes, sin ajustar por inflación. Junio y diciembre incluyen el aguinaldo. El OEDE separa la Ciudad, los partidos del Gran Buenos Aires y el resto de la provincia.",
+    },
+    {
+      ...base.indecEph,
+      items: [
+        ...povertySnapshot.sources.map((url) => ({
+          label: "Pobreza e indigencia por aglomerado, en % de personas y de hogares, con su coeficiente de variación (cuadros 4.1 y 4.2)",
+          detail: fileName(url),
+          url,
+        })),
+        ...unemploymentSnapshot.sources.map((url) => ({
+          label: "Tasa de desocupación por aglomerado (cuadro 1.8)",
+          detail: fileName(url),
+          url,
+        })),
+      ],
+      update: "Copiados en el tablero desde cada informe del INDEC: la pobreza se publica cada semestre y la desocupación, cada trimestre.",
+      note: "El INDEC no publica estos datos por provincia, sino por aglomerado urbano. Los valores con coeficiente de variación mayor al 16 % se marcan para usar con cuidado.",
+    },
+    {
+      ...base.indec,
+      title: "INDEC, Índice de Precios al Consumidor (IPC) por región, en la API de Series de Tiempo de datos.gob.ar",
+      description:
+        "Nivel general del IPC de cada región, base diciembre 2016 = 100. Las variaciones mensual e interanual las calcula este tablero a partir del índice.",
+      items: REGIONS.map((region) => indecItem(region.name, IPC_REGION_SERIES[region.id], "nivel general")),
+      update: "Se consulta cada hora; el INDEC publica el IPC una vez por mes.",
+      note: "Cada provincia toma el valor de su región: el IPC no se publica por provincia.",
     },
   ];
 }
