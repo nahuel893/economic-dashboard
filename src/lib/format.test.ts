@@ -86,9 +86,10 @@ describe("formatChange", () => {
 });
 
 describe("formatCompact", () => {
-  it("shortens peso amounts in millions with the Spanish long scale: B is billón (10^12), mil M is mil millones", () => {
-    expect(formatCompact(98_221_865, "arsMillions")).toBe("$ 98,2 B");
-    expect(formatCompact(1_234_567, "arsMillions")).toBe("$ 1,23 B");
+  it("shortens peso amounts in millions with the Spanish long scale, spelling out billones (10^12)", () => {
+    expect(formatCompact(98_221_865, "arsMillions")).toBe("$ 98,2 billones");
+    expect(formatCompact(1_234_567, "arsMillions")).toBe("$ 1,23 billones");
+    expect(formatCompact(1_000_400, "arsMillions")).toBe("$ 1 billón");
     expect(formatCompact(234_000, "arsMillions")).toBe("$ 234 mil M");
     expect(formatCompact(12_345, "arsMillions")).toBe("$ 12,3 mil M");
     expect(formatCompact(950, "arsMillions")).toBe("$ 950 M");

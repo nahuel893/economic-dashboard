@@ -234,7 +234,7 @@ describe("buildMapView", () => {
     const view = buildMapView(resolveMapSelection({ kpi: "depositos" }, periodsOf), {
       deposits: series([{ period: "2026-Q1", values: { "02": { value: 98_221_865 }, "94": { value: 234_000 } } }]),
     })!;
-    expect(view.places.find((p) => p.id === "02")!.label).toBe("$ 98,2 B");
+    expect(view.places.find((p) => p.id === "02")!.label).toBe("$ 98,2 billones");
     expect(view.places.find((p) => p.id === "94")!.label).toBe("$ 234 mil M");
   });
 
