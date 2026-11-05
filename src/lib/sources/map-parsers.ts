@@ -221,7 +221,7 @@ export function parseOpexSemesters(rows: Row[]): { total: MapSeries; yearOnYear:
         if (value !== null) values[area] = { value };
       }
       if (!Object.keys(values).length) return [];
-      return [{ period: `${year}-H1`, values, ...(provisional ? { note: "Dato provisorio." } : {}) }];
+      return [{ period: `${year}-H1`, values, ...(provisional ? { note: "Dato provisorio" } : {}) }];
     }),
   });
 
