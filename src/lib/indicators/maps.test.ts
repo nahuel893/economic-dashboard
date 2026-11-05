@@ -28,6 +28,9 @@ const PERIODS: Record<string, string[]> = {
   "salarios/level": ["2026-04", "2026-05", "2026-06"],
   "empleo/yearOnYear": ["2025-Q4", "2026-Q1"],
   "empleo/jobs": ["2026-Q1"],
+  "depositos/deposits": ["2025-Q4", "2026-Q1"],
+  "depositos/loans": ["2026-Q1"],
+  "depositos/ratio": ["2026-Q1"],
   "pobreza/povertyPersons": ["2025-H2", "2026-H1"],
   "pobreza/povertyHouseholds": ["2025-H2", "2026-H1"],
   "pobreza/indigencePersons": ["2026-H1"],
@@ -45,6 +48,7 @@ describe("MAP_KPIS", () => {
     expect(MAP_KPIS.map((k) => [k.id, k.geometry, k.unit])).toEqual([
       ["salarios", "areas", "ars"],
       ["empleo", "areas", "percent"],
+      ["depositos", "areas", "arsMillions"],
       ["pobreza", "aglomerados", "percent"],
       ["inflacion", "regions", "percent"],
       ["desocupacion", "aglomerados", "percent"],
@@ -67,7 +71,7 @@ describe("MAP_KPIS", () => {
   });
 
   it("cites each source by its short name", () => {
-    expect(MAP_KPIS.map((k) => k.source)).toEqual(["OEDE (SIPA)", "OEDE (SIPA)", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, EPH", "INDEC, EPH"]);
+    expect(MAP_KPIS.map((k) => k.source)).toEqual(["OEDE (SIPA)", "OEDE (SIPA)", "BCRA", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, EPH", "INDEC, EPH"]);
   });
 });
 
@@ -93,6 +97,18 @@ describe("resolveMapSelection", () => {
     expect(resolve({ kpi: "empleo" })).toEqual(["empleo", "variacion", "2026-Q1"]);
     expect(resolve({ kpi: "empleo", valor: "puestos", periodo: "2026-t1" })).toEqual(["empleo", "puestos", "2026-Q1"]);
     expect(mapHref("empleo", "puestos", "2026-Q1")).toBe("/mapas?kpi=empleo&valor=puestos&periodo=2026-t1");
+  });
+
+  it("resolves deposits and loans to deposits by default, with loans and the loans-to-deposits ratio on request", () => {
+    expect(resolve({ kpi: "depositos" })).toEqual(["depositos", "depositos", "2026-Q1"]);
+    expect(resolve({ kpi: "depositos", valor: "prestamos" })).toEqual(["depositos", "prestamos", "2026-Q1"]);
+    expect(resolve({ kpi: "depositos", valor: "relacion", periodo: "2026-t1" })).toEqual(["depositos", "relacion", "2026-Q1"]);
+    expect(kpi("depositos").variants.map((v) => [v.slug, v.unit ?? kpi("depositos").unit])).toEqual([
+      ["depositos", "arsMillions"],
+      ["prestamos", "arsMillions"],
+      ["relacion", "percent"],
+    ]);
+    expect(mapHref("depositos", "relacion", "2026-Q1")).toBe("/mapas?kpi=depositos&valor=relacion&periodo=2026-t1");
   });
 
   it("falls back on unknown or missing values instead of failing", () => {
@@ -190,6 +206,14 @@ describe("buildMapView", () => {
     expect(city.label).toBe("$ 2,76 M");
     expect(city.labelAt).toEqual(AREAS.find((a) => a.id === "02")!.label);
     expect(view.places.find((p) => p.id === "94")!.label).toBeNull();
+  });
+
+  it("labels peso amounts in millions with the long-scale short form", () => {
+    const view = buildMapView(resolveMapSelection({ kpi: "depositos" }, periodsOf), {
+      deposits: series([{ period: "2026-Q1", values: { "02": { value: 98_221_865 }, "94": { value: 234_000 } } }]),
+    })!;
+    expect(view.places.find((p) => p.id === "02")!.label).toBe("$ 98,2 B");
+    expect(view.places.find((p) => p.id === "94")!.label).toBe("$ 234 mil M");
   });
 
   it("labels regions at the region's label point and aglomerados at their own point", () => {

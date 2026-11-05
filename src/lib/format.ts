@@ -93,9 +93,17 @@ export function formatDate(isoDate: string): string {
   }).format(new Date(isoDate));
 }
 
+/** "$ 98,2 B" (billones, 10^12), "$ 12,3 mil M" (mil millones, 10^9) or "$ 950 M" for an amount in millions of pesos. */
+function formatCompactArsMillions(millions: number): string {
+  const size = Math.abs(millions);
+  const [scaled, suffix] = size >= 1e6 ? [millions / 1e6, " B"] : size >= 1e3 ? [millions / 1e3, " mil M"] : [millions, " M"];
+  return `$ ${new Intl.NumberFormat(LOCALE, { maximumSignificantDigits: 3 }).format(scaled)}${suffix}`;
+}
+
 /** Short value for a map label: "$ 2,76 M", "40,6 mil" or "33,4 %". The exact value stays in the tooltip and the table. */
 export function formatCompact(value: number, unit: Unit): string {
   if (unit === "percent") return formatPercent(value, 1);
+  if (unit === "arsMillions") return formatCompactArsMillions(value);
   const size = Math.abs(value);
   const [scaled, suffix] = size >= 1e6 ? [value / 1e6, " M"] : size >= 1e3 ? [value / 1e3, " mil"] : [value, ""];
   const digits = new Intl.NumberFormat(LOCALE, { maximumSignificantDigits: 3 }).format(scaled);

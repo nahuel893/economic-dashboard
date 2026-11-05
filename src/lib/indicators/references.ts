@@ -4,7 +4,7 @@
  */
 import { SOURCE_NAMES, type SourceId } from "@/lib/sources/citations";
 import { BCRA_VARIABLES, INDEC_SERIES } from "@/lib/sources/clients";
-import { EMPLOYMENT_URL, IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
+import { BCRA_BALANCES_URL, EMPLOYMENT_URL, IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
 import povertySnapshot from "@/lib/sources/snapshots/eph-poverty.json";
 import ratesSnapshot from "@/lib/sources/snapshots/eph-rates.json";
 import unemploymentSnapshot from "@/lib/sources/snapshots/eph-unemployment.json";
@@ -189,7 +189,7 @@ export function historyReferences(): Reference[] {
 /** The last segment of a file URL, as the detail of its reference item. */
 const fileName = (url: string) => url.slice(url.lastIndexOf("/") + 1);
 
-/** References of "Mapas", in the order of its indicators: wages, poverty and the labor rates, inflation. */
+/** References of "Mapas", in the order of its indicators: wages and employment, deposits and loans, poverty and the labor rates, inflation. */
 export function mapsReferences(): Reference[] {
   return [
     {
@@ -208,6 +208,22 @@ export function mapsReferences(): Reference[] {
       ],
       update: "Se consulta una vez por día; el OEDE actualiza los salarios cada mes y el empleo cada trimestre.",
       note: "Salarios en pesos corrientes, sin ajustar por inflación; junio y diciembre incluyen el aguinaldo. La variación interanual del empleo la calcula este tablero contra el mismo trimestre del año anterior. El OEDE separa la Ciudad, los partidos del Gran Buenos Aires y el resto de la provincia.",
+    },
+    {
+      ...base.bcra,
+      title: "Banco Central de la República Argentina, Información por provincia (disponibilidades, depósitos y préstamos)",
+      url: "https://www.bcra.gob.ar/en/querying-statistical-series-in-txt-format/",
+      description:
+        "Saldos trimestrales de depósitos y préstamos del sector privado no financiero, clasificados según la ubicación de la sucursal bancaria, en miles de pesos.",
+      items: [
+        {
+          label: "Depósitos y préstamos del sector privado no financiero por provincia, en pesos y en moneda extranjera (series 20318 a 20695)",
+          detail: fileName(BCRA_BALANCES_URL),
+          url: BCRA_BALANCES_URL,
+        },
+      ],
+      update: "Se consulta una vez por día; el BCRA publica un trimestre nuevo unos meses después de su cierre.",
+      note: "Los saldos corresponden a la provincia donde está la sucursal del banco, no a la residencia de quien deposita o toma el préstamo. El archivo suma pesos y moneda extranjera valuada en pesos; este tablero los agrega, pasa los miles de pesos a millones y calcula los préstamos sobre depósitos. El BCRA separa el Gran Buenos Aires del resto de la provincia, igual que el mapa.",
     },
     {
       ...base.indecEph,

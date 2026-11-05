@@ -79,6 +79,7 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 |-----|----------|---------|
 | Average registered private wage (OEDE) | Provinces; Buenos Aires split into the 24 GBA partidos and the rest | Monthly; June and December include the aguinaldo |
 | Registered private employment, year-on-year % change or number of jobs (OEDE) | Provinces, split like the wages | Quarterly |
+| Private deposits and loans, millions of pesos or loans as % of deposits (BCRA) | Provinces, split like the wages (the BCRA splits Buenos Aires itself) | Quarterly |
 | Poverty and indigence, % of persons or households (INDEC, EPH) | The 31 EPH urban areas as points | Half-yearly |
 | Inflation, monthly and year-on-year (INDEC) | The 6 INDEC regions | Monthly |
 | Unemployment rate (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
@@ -86,6 +87,7 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 
 - Each value is shown where its source measures it: INDEC publishes poverty and the labor rates only for urban areas, never by province, so they are points. Survey estimates with a coefficient of variation above 16 % carry a "usar con cuidado" mark.
 - OEDE publishes provincial employment per quarter, not per month, in a workbook with one sheet per province; the map reads the TOTAL row of each and computes the year-on-year change itself.
+- Deposits and loans (`?kpi=depositos`, with `valor=depositos` by default, `valor=prestamos` or `valor=relacion`, loans as % of deposits) come from the BCRA's `vol4_ser.txt` "Información por provincia" file, read at runtime. It has no labels, so the parser checks its layout against the data (the provinces must add up to the national total) and fails instead of mislabelling. Balances belong to the province of the bank branch, not of the depositor. The BCRA already splits Buenos Aires into Gran Buenos Aires and the rest of the province, so no total is split by guesswork. Peso amounts label as "$ 98,2 B" (billones, 10^12) or "$ 12,3 mil M" (mil millones).
 - Hover or tap a place for its value, period and source; a table under the map lists the same values.
 - The Malvinas, the other South Atlantic islands and the Antarctic sector are drawn as outlines with the map's own "Islas Malvinas" label.
 - Ctrl + wheel (or two fingers) moves the map, so it never takes over the page scroll.

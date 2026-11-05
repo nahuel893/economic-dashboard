@@ -38,7 +38,7 @@ Delivery: exception-ok. Each worktree branch is one slice, merged into `feat/map
 | T3 | S1-S3 | inline | done | d739d0a, ec10514, 2bdfaed |
 | T4 | S4 | inline | done | e7a5f1e |
 | T5 | S1, S5 | delegated (parallel, worktree `map-exports`) | pending | |
-| T6 | S1, S6 | delegated (parallel, worktree `map-deposits`) | pending | |
+| T6 | S1, S6 | delegated (parallel, worktree `map-deposits`) | done | see Log |
 | T7 | S1, S7 | delegated (parallel, worktree `map-census`) | pending | |
 | T8 | S5-S7 | inline | pending | |
 
@@ -70,4 +70,4 @@ Route evidence: the user asked for two parallel writers in two worktrees. The un
   - Label points come from mapshaper `-points inner`; Salta's was moved off its north-eastern lobe. A test checks that each point is inside its polygon.
   - Checks: 187 tests, tsc, lint and build pass. The CDP screenshots of wages and activity show the labels; there are no console errors.
 - **L8 (2026-11-05), user:** "falta agregar exportaciones, depositos y prestamos, y censo 2022, entiendo que los 2 primeros kpi que me mostraste en tabla ya estan que no?" Same setup as S1: three Sonnet writers in three worktrees.
-
+- T6 (feat/map-deposits): `?kpi=depositos` from BCRA `vol4_ser.txt` (last quarter 2026-Q1), Buenos Aires from the BCRA's own GBA/rest split, compact labels "$ 98,2 B"; `pnpm test` 197 passed, build, tsc and lint clean, `/mapas?kpi=depositos` (3 variants) 200 on port 3204.

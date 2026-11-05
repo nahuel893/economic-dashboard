@@ -1,8 +1,8 @@
 /**
  * The "Mapas" tab: a catalog of the KPIs the map can show, how the URL picks
  * one of them, and the pure work of turning a period's values into colored
- * places. Each KPI is drawn on the geography its source publishes: wages and
- * employment by area, inflation by region (each area takes its region's value) and the EPH
+ * places. Each KPI is drawn on the geography its source publishes: wages, employment and
+ * bank deposits and loans by area, inflation by region (each area takes its region's value) and the EPH
  * KPIs by aglomerado, as points, never painted on provinces.
  */
 import { formatCompact, formatMonth, type Unit } from "@/lib/format";
@@ -10,7 +10,7 @@ import { SOURCE_NAMES } from "@/lib/sources/citations";
 import { AGLOMERADOS, AREAS, REGIONS, type AreaId, type LabelPoint } from "./geography";
 import type { MapSeries } from "./map-data";
 
-export type MapKpiId = "salarios" | "empleo" | "pobreza" | "inflacion" | "desocupacion" | "actividad";
+export type MapKpiId = "salarios" | "empleo" | "depositos" | "pobreza" | "inflacion" | "desocupacion" | "actividad";
 
 /** Where values are drawn: area fills, area fills by region, or aglomerado points. */
 export type MapGeometry = "areas" | "regions" | "aglomerados";
@@ -75,6 +75,36 @@ export const MAP_KPIS: MapKpi[] = [
         series: "jobs",
         description: "Cantidad de puestos de trabajo asalariados registrados del sector privado.",
         unit: "count",
+      },
+    ],
+  },
+  {
+    id: "depositos",
+    label: "Depósitos y préstamos",
+    geometry: "areas",
+    unit: "arsMillions",
+    source: SOURCE_NAMES.bcra,
+    variants: [
+      {
+        slug: "depositos",
+        label: "Depósitos",
+        series: "deposits",
+        description:
+          "Depósitos del sector privado no financiero en las sucursales bancarias de cada lugar, en pesos y en moneda extranjera, en millones de pesos corrientes al cierre del trimestre.",
+      },
+      {
+        slug: "prestamos",
+        label: "Préstamos",
+        series: "loans",
+        description:
+          "Préstamos al sector privado no financiero en las sucursales bancarias de cada lugar, en pesos y en moneda extranjera, en millones de pesos corrientes al cierre del trimestre.",
+      },
+      {
+        slug: "relacion",
+        label: "Préstamos sobre depósitos",
+        series: "ratio",
+        description: "Préstamos al sector privado como porcentaje de sus depósitos en las sucursales de cada lugar.",
+        unit: "percent",
       },
     ],
   },
