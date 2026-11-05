@@ -35,17 +35,20 @@ const PERIODS: Record<string, string[]> = {
   "inflacion/monthly": ["2026-07", "2026-08"],
   "inflacion/yearOnYear": ["2026-08"],
   "desocupacion/unemployment": ["2026-Q1", "2026-Q2"],
+  "actividad/activity": ["2026-Q1", "2026-Q2"],
+  "actividad/employment": ["2026-Q2"],
 };
 const periodsOf = (k: MapKpi, v: MapVariant) => PERIODS[`${k.id}/${v.series}`] ?? [];
 
 describe("MAP_KPIS", () => {
-  it("offers wages, employment, poverty, inflation and unemployment, each on its honest geography", () => {
+  it("offers wages, employment, poverty, inflation, unemployment and labor rates, each on its honest geography", () => {
     expect(MAP_KPIS.map((k) => [k.id, k.geometry, k.unit])).toEqual([
       ["salarios", "areas", "ars"],
       ["empleo", "areas", "percent"],
       ["pobreza", "aglomerados", "percent"],
       ["inflacion", "regions", "percent"],
       ["desocupacion", "aglomerados", "percent"],
+      ["actividad", "aglomerados", "percent"],
     ]);
   });
 
@@ -60,10 +63,11 @@ describe("MAP_KPIS", () => {
     expect(kpi("empleo").variants.map((v) => v.slug)).toEqual(["variacion", "puestos"]);
     expect(kpi("salarios").variants).toHaveLength(1);
     expect(kpi("desocupacion").variants).toHaveLength(1);
+    expect(kpi("actividad").variants.map((v) => v.slug)).toEqual(["actividad", "empleo"]);
   });
 
   it("cites each source by its short name", () => {
-    expect(MAP_KPIS.map((k) => k.source)).toEqual(["OEDE (SIPA)", "OEDE (SIPA)", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, EPH"]);
+    expect(MAP_KPIS.map((k) => k.source)).toEqual(["OEDE (SIPA)", "OEDE (SIPA)", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, EPH", "INDEC, EPH"]);
   });
 });
 
@@ -81,6 +85,8 @@ describe("resolveMapSelection", () => {
     expect(resolve({ kpi: "pobreza", valor: "hogares", periodo: "2025-s2" })).toEqual(["pobreza", "hogares", "2025-H2"]);
     expect(resolve({ kpi: "desocupacion", periodo: "2026-t1" })).toEqual(["desocupacion", "tasa", "2026-Q1"]);
     expect(resolve({ kpi: "salarios", periodo: "2026-05" })).toEqual(["salarios", "promedio", "2026-05"]);
+    expect(resolve({ kpi: "actividad" })).toEqual(["actividad", "actividad", "2026-Q2"]);
+    expect(resolve({ kpi: "actividad", valor: "empleo", periodo: "2026-t1" })).toEqual(["actividad", "empleo", "2026-Q2"]);
   });
 
   it("resolves employment to the year-on-year change by default and to the jobs on request", () => {
@@ -106,6 +112,7 @@ describe("mapHref", () => {
   it("builds the URL with Spanish slugs", () => {
     expect(mapHref("pobreza", "hogares", "2026-H1")).toBe("/mapas?kpi=pobreza&valor=hogares&periodo=2026-s1");
     expect(mapHref("desocupacion", "tasa", "2026-Q2")).toBe("/mapas?kpi=desocupacion&valor=tasa&periodo=2026-t2");
+    expect(mapHref("actividad", "empleo", "2026-Q2")).toBe("/mapas?kpi=actividad&valor=empleo&periodo=2026-t2");
     expect(mapHref("salarios", "promedio", "2026-06")).toBe("/mapas?kpi=salarios&valor=promedio&periodo=2026-06");
   });
 

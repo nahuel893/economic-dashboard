@@ -1,6 +1,7 @@
 /**
  * Builds the committed EPH snapshots the Mapas tab reads: poverty and
- * indigence (half-yearly) and unemployment (quarterly) by aglomerado.
+ * indigence (half-yearly) and the labor rates (quarterly: unemployment,
+ * activity and employment) by aglomerado.
  *
  * INDEC publishes these tables only as legacy .xls (BIFF) files, which no
  * maintained npm reader opens, so each file is converted to .xlsx with
@@ -29,10 +30,13 @@ const FTP = "https://www.indec.gob.ar/ftp/cuadros/sociedad";
  */
 const POVERTY_RELEASES = ["09_26"];
 
-/** Labor-market report with the unemployment rate by aglomerado since 2016 (Cuadro 1.8). */
+/**
+ * Labor-market report with the activity (Cuadro 1.6), employment (1.7) and unemployment (1.8)
+ * rates by aglomerado since 2016. INDEC publishes no CV for these rates by aglomerado.
+ */
 const UNEMPLOYMENT_FILE = `${FTP}/cuadros_eph_informe_09_26.xls`;
 
-/** Quarters of unemployment the snapshot keeps. */
+/** Quarters of each labor rate the snapshot keeps. */
 const QUARTERS = 12;
 
 const SNAPSHOTS = new URL("../../src/lib/sources/snapshots/", import.meta.url);
@@ -86,6 +90,14 @@ const poverty = ephPovertySeries(releases);
 write("eph-poverty.json", povertyUrls, poverty);
 console.log(`  poverty: ${poverty.povertyPersons.periods.map((p) => p.period).join(", ")}`);
 
-const unemployment = parseEphQuarterly(await readSheet(await download(UNEMPLOYMENT_FILE), "Cuadro 1.8"), QUARTERS);
+const laborFile = await download(UNEMPLOYMENT_FILE);
+const quarterly = async (sheet: string) => parseEphQuarterly(await readSheet(laborFile, sheet), QUARTERS);
+
+const unemployment = await quarterly("Cuadro 1.8");
 write("eph-unemployment.json", [UNEMPLOYMENT_FILE], { unemployment });
 console.log(`  unemployment: ${unemployment.periods.map((p) => p.period).join(", ")}`);
+
+const activity = await quarterly("Cuadro 1.6");
+const employment = await quarterly("Cuadro 1.7");
+write("eph-rates.json", [UNEMPLOYMENT_FILE], { activity, employment });
+console.log(`  activity and employment: ${activity.periods.map((p) => p.period).join(", ")}`);

@@ -10,6 +10,7 @@ import { SOURCE_NAMES } from "@/lib/sources/citations";
 import {
   getEmploymentMap,
   getEphPovertyMap,
+  getLaborRatesMap,
   getRegionalInflationMap,
   getUnemploymentMap,
   getWageMap,
@@ -18,21 +19,22 @@ import {
 export const metadata: Metadata = {
   title: "Mapas | Tablero económico de Argentina",
   description:
-    "Salarios y empleo registrado por provincia, pobreza y desocupación por aglomerado e inflación por región de Argentina, en un mapa con el último dato.",
+    "Salarios y empleo registrado por provincia, pobreza, desocupación, actividad y empleo por aglomerado e inflación por región de Argentina, en un mapa con el último dato.",
 };
 
 const single = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
 /** Each KPI loads on its own: one failing source leaves the others on the map. */
 async function loadMapData(): Promise<Record<MapKpiId, Indicator<MapKpiData>>> {
-  const [salarios, empleo, pobreza, inflacion, desocupacion] = await Promise.all([
+  const [salarios, empleo, pobreza, inflacion, desocupacion, actividad] = await Promise.all([
     settle(SOURCE_NAMES.oede, async (): Promise<MapKpiData> => ({ level: await getWageMap() })),
     settle(SOURCE_NAMES.oede, async (): Promise<MapKpiData> => ({ ...(await getEmploymentMap()) })),
     settle(SOURCE_NAMES.indecEph, async (): Promise<MapKpiData> => ({ ...(await getEphPovertyMap()) })),
     settle(SOURCE_NAMES.indec, async (): Promise<MapKpiData> => ({ ...(await getRegionalInflationMap()) })),
     settle(SOURCE_NAMES.indecEph, async (): Promise<MapKpiData> => ({ unemployment: await getUnemploymentMap() })),
+    settle(SOURCE_NAMES.indecEph, async (): Promise<MapKpiData> => ({ ...(await getLaborRatesMap()) })),
   ]);
-  return { salarios, empleo, pobreza, inflacion, desocupacion };
+  return { salarios, empleo, pobreza, inflacion, desocupacion, actividad };
 }
 
 async function MapsContent({ searchParams }: Pick<PageProps<"/mapas">, "searchParams">) {
