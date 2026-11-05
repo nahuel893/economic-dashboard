@@ -94,6 +94,13 @@ describe("formatCompact", () => {
     expect(formatCompact(406_000, "count")).toBe("406 mil");
   });
 
+  it("keeps the decimals of a density and shortens the big ones", () => {
+    expect(normalize(formatValue(0.9, "perKm2"))).toBe("0,9 hab./km²");
+    expect(normalize(formatValue(15161.3, "perKm2"))).toBe("15.161,3 hab./km²");
+    expect(formatCompact(15161.3, "perKm2")).toBe("15,2 mil");
+    expect(formatCompact(0.9, "perKm2")).toBe("0,9");
+  });
+
   it("keeps small numbers and percentages whole", () => {
     expect(formatCompact(950, "count")).toBe("950");
     expect(formatCompact(33.42, "percent")).toBe("33,4 %");

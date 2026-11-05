@@ -4,7 +4,7 @@ import { useState } from "react";
 import { formatNumber, formatValue } from "@/lib/format";
 import { type MapView } from "@/lib/indicators/maps";
 
-const PLACE_HEADERS: Record<MapView["geometry"], string> = { areas: "Provincia", regions: "Región", aglomerados: "Aglomerado" };
+const PLACE_HEADERS: Record<MapView["geometry"], string> = { areas: "Provincia", regions: "Región", aglomerados: "Aglomerado", departments: "Departamento, partido o comuna" };
 
 /** The map's values as a table, sortable by value: the reading path for screen readers and small phones. */
 export function MapTable({ view }: { view: MapView }) {

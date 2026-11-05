@@ -322,3 +322,42 @@ export function parseEphQuarterly(rows: Row[], quarters: number): MapSeries {
     }),
   };
 }
+
+/* ------------------------------ Census 2022 ------------------------------- */
+
+/** Period key of the census values: the year, since INDEC publishes them once. */
+export const CENSUS_PERIOD = "2022";
+
+const CENSUS_NOTE =
+  "No incluye la Antártida Argentina ni las islas del Atlántico Sur, que no se dibujan (81 personas censadas en bases antárticas)";
+
+/**
+ * Population and density by department from INDEC's provincial tables "Total
+ * de población y densidad, por superficie, según departamento" (one sheet per
+ * province: code, name, area in km², population, density). The code is a number
+ * without its leading zero for Buenos Aires and Ciudad de Buenos Aires; the
+ * province's total, Buenos Aires's sub-totals and Tierra del Fuego's Antarctic
+ * split have no five-digit department code and are skipped, and so is 94028
+ * (Antártida Argentina e Islas del Atlántico Sur), for which INDEC gives no
+ * density and which the map does not draw. Density is INDEC's own, to one decimal.
+ */
+export function censusSeries(sheets: Row[][]): { population: MapSeries; density: MapSeries } {
+  const population: Record<string, MapValue> = {};
+  const density: Record<string, MapValue> = {};
+  for (const row of sheets.flat()) {
+    const [code, , , people, perKm2] = row;
+    const numericCode = typeof code === "string" && /^\d+$/.test(code) ? Number(code) : code;
+    if (typeof numericCode !== "number" || numericCode < 1000) continue;
+    const id = String(numericCode).padStart(5, "0");
+    const peopleCount = number(people);
+    const perKm2Value = number(perKm2);
+    if (peopleCount === null || perKm2Value === null) continue;
+    if (id in population) throw new Error(`Census department ${id} appears twice`);
+    population[id] = { value: peopleCount };
+    density[id] = { value: Math.round(perKm2Value * 10) / 10 };
+  }
+  return {
+    population: { periods: [{ period: CENSUS_PERIOD, values: population, note: CENSUS_NOTE }] },
+    density: { periods: [{ period: CENSUS_PERIOD, values: density, note: CENSUS_NOTE }] },
+  };
+}

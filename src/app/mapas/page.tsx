@@ -8,6 +8,7 @@ import { settle } from "@/lib/indicators/settle";
 import type { Indicator } from "@/lib/indicators/types";
 import { SOURCE_NAMES } from "@/lib/sources/citations";
 import {
+  getCensusMap,
   getEmploymentMap,
   getEphPovertyMap,
   getLaborRatesMap,
@@ -19,22 +20,23 @@ import {
 export const metadata: Metadata = {
   title: "Mapas | Tablero económico de Argentina",
   description:
-    "Salarios y empleo registrado por provincia, pobreza, desocupación, actividad y empleo por aglomerado e inflación por región de Argentina, en un mapa con el último dato.",
+    "Salarios y empleo registrado por provincia, pobreza, desocupación, actividad y empleo por aglomerado, inflación por región y población del Censo 2022 por departamento de Argentina, en un mapa con el último dato.",
 };
 
 const single = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
 /** Each KPI loads on its own: one failing source leaves the others on the map. */
 async function loadMapData(): Promise<Record<MapKpiId, Indicator<MapKpiData>>> {
-  const [salarios, empleo, pobreza, inflacion, desocupacion, actividad] = await Promise.all([
+  const [salarios, empleo, pobreza, inflacion, desocupacion, actividad, censo] = await Promise.all([
     settle(SOURCE_NAMES.oede, async (): Promise<MapKpiData> => ({ level: await getWageMap() })),
     settle(SOURCE_NAMES.oede, async (): Promise<MapKpiData> => ({ ...(await getEmploymentMap()) })),
     settle(SOURCE_NAMES.indecEph, async (): Promise<MapKpiData> => ({ ...(await getEphPovertyMap()) })),
     settle(SOURCE_NAMES.indec, async (): Promise<MapKpiData> => ({ ...(await getRegionalInflationMap()) })),
     settle(SOURCE_NAMES.indecEph, async (): Promise<MapKpiData> => ({ unemployment: await getUnemploymentMap() })),
     settle(SOURCE_NAMES.indecEph, async (): Promise<MapKpiData> => ({ ...(await getLaborRatesMap()) })),
+    settle(SOURCE_NAMES.indecCenso, async (): Promise<MapKpiData> => ({ ...(await getCensusMap()) })),
   ]);
-  return { salarios, empleo, pobreza, inflacion, desocupacion, actividad };
+  return { salarios, empleo, pobreza, inflacion, desocupacion, actividad, censo };
 }
 
 async function MapsContent({ searchParams }: Pick<PageProps<"/mapas">, "searchParams">) {
@@ -77,8 +79,8 @@ export default function MapsPage({ searchParams }: PageProps<"/mapas">) {
         <h1 className="text-4xl font-extrabold tracking-tight [font-stretch:125%] sm:text-5xl">Argentina, en el mapa</h1>
         <p className="max-w-prose text-base text-muted-foreground">
           Dónde se gana más, dónde hay más pobreza y dónde suben más los precios. Cada dato se muestra como lo publica su
-          fuente: los salarios y el empleo por provincia, la inflación por región y la pobreza y la desocupación por aglomerado
-          urbano. Arranca en el último dato; elegí otro período arriba del mapa. Para moverlo usá dos dedos, o Ctrl y la
+          fuente: los salarios y el empleo por provincia, la inflación por región, la pobreza y la desocupación por aglomerado
+          urbano y la población del Censo 2022 por departamento. Arranca en el último dato; elegí otro período arriba del mapa. Para moverlo usá dos dedos, o Ctrl y la
           rueda del mouse.
         </p>
       </header>

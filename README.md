@@ -73,7 +73,7 @@ One line chart per variable (dollars, gap, inflation, economic activity, country
 
 ### Mapas: where things happen
 
-One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a KPI selector, its value variants and a period selector that starts at the latest data. KPI, value and period live in the URL (`?kpi=pobreza&valor=hogares&periodo=2026-s1`; employment is `?kpi=empleo`, with `valor=variacion` by default or `valor=puestos`).
+One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a KPI selector, its value variants and a period selector that starts at the latest data. KPI, value and period live in the URL (`?kpi=pobreza&valor=hogares&periodo=2026-s1`; employment is `?kpi=empleo`, with `valor=variacion` by default or `valor=puestos`; the census is `?kpi=censo`, with `valor=poblacion` by default or `valor=densidad`).
 
 | KPI | Drawn on | Periods |
 |-----|----------|---------|
@@ -83,13 +83,15 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 | Inflation, monthly and year-on-year (INDEC) | The 6 INDEC regions | Monthly |
 | Unemployment rate (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
 | Activity and employment rates (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
+| Census 2022: population and density, inhabitants per km² (INDEC) | The 527 departments, partidos and comunas | Fixed (2022) |
 
 - Each value is shown where its source measures it: INDEC publishes poverty and the labor rates only for urban areas, never by province, so they are points. Survey estimates with a coefficient of variation above 16 % carry a "usar con cuidado" mark.
 - OEDE publishes provincial employment per quarter, not per month, in a workbook with one sheet per province; the map reads the TOTAL row of each and computes the year-on-year change itself.
+- The census map has no NBI (unmet basic needs) variant: INDEC publishes no NBI table by department for the 2022 census. Density uses the area INDEC publishes for each department. The Antarctic sector and the South Atlantic islands (INDEC's department 94028, 81 people at Antarctic bases) are not drawn, like in the other maps. The department shapes (`public/geo/departments.json`) load only when the census is selected.
 - Hover or tap a place for its value, period and source; a table under the map lists the same values.
 - The Malvinas, the other South Atlantic islands and the Antarctic sector are drawn as outlines with the map's own "Islas Malvinas" label.
 - Ctrl + wheel (or two fingers) moves the map, so it never takes over the page scroll.
-- The boundaries come from IGN through georef and are rebuilt with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/geo/build-geo.mjs`. EPH poverty, unemployment, activity and employment are committed snapshots: refresh them after each INDEC release with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/eph-snapshots.mts`.
+- The boundaries come from IGN through georef and are rebuilt with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/geo/build-geo.mjs`. EPH poverty, unemployment, activity and employment are committed snapshots: refresh them after each INDEC release with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/eph-snapshots.mts`. The census is a committed snapshot too, built with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/census-snapshot.mts --from <directory with INDEC's 24 provincial tables>` (see the script header; censo.gob.ar does not send its intermediate certificate, so Node cannot download them itself). It only needs to run again if INDEC corrects the tables.
 
 ## Data sources
 
@@ -102,6 +104,7 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 | [BYMA open data](https://open.bymadata.com.ar) | Merval |
 | [OEDE, Ministerio de Capital Humano](https://www.argentina.gob.ar/node/142211) | Wages (monthly) and registered employment (quarterly) by province (Mapas) |
 | [INDEC, EPH](https://www.indec.gob.ar) | Poverty, indigence, unemployment, activity and employment by urban area (Mapas) |
+| [INDEC, Censo 2022](https://censo.gob.ar/index.php/datos_definitivos/) | Population and density by department (Mapas) |
 | [IGN via georef](https://datosgobar.github.io/georef-ar-api/) and [OpenFreeMap](https://openfreemap.org) | Boundaries and basemap (Mapas) |
 
 Every card and chart cites its source by name, linked to the full references at the bottom of the page: endpoints, BCRA variable numbers, INDEC series ids and how often each one is queried (`src/lib/indicators/references.ts`).

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AGLOMERADOS } from "@/lib/indicators/geography";
+import departmentPlaces from "./snapshots/department-places.json";
 
 const { cacheLife, fetchJson } = vi.hoisted(() => ({ cacheLife: vi.fn(), fetchJson: vi.fn() }));
 vi.mock("next/cache", () => ({ cacheLife }));
@@ -9,6 +10,7 @@ vi.mock("./http", () => ({ fetchJson }));
 import { CACHE } from "./clients";
 import {
   EMPLOYMENT_URL,
+  getCensusMap,
   getEmploymentMap,
   getEphPovertyMap,
   getLaborRatesMap,
@@ -154,5 +156,19 @@ describe("map loaders", () => {
         if (rate !== undefined) expect(cell.value).toBeLessThanOrEqual(rate);
       }
     }
+  });
+
+  it("serves the committed 2022 census for every drawn department, adding up to INDEC's national total", async () => {
+    const { population, density } = await getCensusMap();
+    const drawn = new Set(departmentPlaces.map((p) => p.id));
+    for (const series of [population, density]) {
+      expect(series.periods.map((p) => p.period)).toEqual(["2022"]);
+      expect(Object.keys(series.periods[0].values).sort()).toEqual([...drawn].sort());
+    }
+    // 45,892,285 people in INDEC's definitive national total, 81 of them at the Antarctic bases, which are not drawn.
+    const total = Object.values(population.periods[0].values).reduce((sum, v) => sum + v.value, 0);
+    expect(total + 81).toBe(45_892_285);
+    expect(population.periods[0].values["02007"].value).toBe(223_554);
+    expect(density.periods[0].values["02021"].value).toBe(30_662.5);
   });
 });

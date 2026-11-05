@@ -5,7 +5,7 @@
 //                             plus a label point for the Malvinas
 //   public/geo/departments.json  one filled polygon per department (partido, comuna), drawn only
 //                             by the Census KPI
-//   src/lib/sources/snapshots/department-places.json  id, name and a label point inside each
+//   src/lib/sources/snapshots/department-places.json  id, name, province and a label point inside each
 //                             department, so the page does not load the polygons to list them
 //
 // Run from the repository root (the flag only silences the notice Node prints
@@ -168,10 +168,10 @@ function addMalvinasLabel(outlinesPath) {
 }
 
 /** Writes the label point mapshaper computed for each department next to its id and name. */
-function writePlaces(pointsPath) {
+function writePlaces(pointsPath, provinceOf) {
   const { features } = JSON.parse(readFileSync(pointsPath, "utf8"));
   const places = features
-    .map((f) => ({ id: f.properties.id, name: f.properties.name, labelAt: f.geometry.coordinates }))
+    .map((f) => ({ id: f.properties.id, name: f.properties.name, province: provinceOf.get(f.properties.id), labelAt: f.geometry.coordinates }))
     .sort((a, b) => a.id.localeCompare(b.id));
   writeFileSync(PLACES_PATH, `${JSON.stringify(places)}\n`);
   console.log(`${PLACES_PATH}: ${places.length} places`);
@@ -247,7 +247,9 @@ mapshaper([
   "-o", departmentsPath, "format=geojson", `precision=${PRECISION}`,
 ]);
 mapshaper(["-i", departmentsPath, "-points", "inner", "-o", labelPointsPath, "format=geojson", `precision=${PRECISION}`]);
-writePlaces(labelPointsPath);
+// "Tierra del Fuego" for short: georef's name also lists the Antarctic sector and the islands.
+const provinceName = new Map(provinces.features.map((p) => [p.properties.id, p.properties.id === "94" ? "Tierra del Fuego" : p.properties.nombre]));
+writePlaces(labelPointsPath, new Map(departments.features.map((d) => [d.properties.id, provinceName.get(d.properties.provincia.id)])));
 
 report(areasPath);
 report(outlinesPath);

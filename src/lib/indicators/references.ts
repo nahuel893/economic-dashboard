@@ -5,6 +5,7 @@
 import { SOURCE_NAMES, type SourceId } from "@/lib/sources/citations";
 import { BCRA_VARIABLES, INDEC_SERIES } from "@/lib/sources/clients";
 import { EMPLOYMENT_URL, IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
+import censusSnapshot from "@/lib/sources/snapshots/census.json";
 import povertySnapshot from "@/lib/sources/snapshots/eph-poverty.json";
 import ratesSnapshot from "@/lib/sources/snapshots/eph-rates.json";
 import unemploymentSnapshot from "@/lib/sources/snapshots/eph-unemployment.json";
@@ -95,6 +96,13 @@ const base = {
     title: "INDEC, Encuesta Permanente de Hogares (EPH)",
     url: "https://www.indec.gob.ar/indec/web/Nivel4-Tema-4-46-152",
     description: "Encuesta a hogares de 31 aglomerados urbanos. Sus resultados son estimaciones con error de muestreo.",
+  },
+  indecCenso: {
+    id: "indecCenso",
+    name: SOURCE_NAMES.indecCenso,
+    title: "INDEC, Censo Nacional de Población, Hogares y Viviendas 2022. Resultados definitivos",
+    url: "https://censo.gob.ar/index.php/datos_definitivos/",
+    description: "Población y superficie de cada departamento, partido y comuna del país.",
   },
 } as const satisfies Record<SourceId, Omit<Reference, "items" | "update" | "note">>;
 
@@ -189,7 +197,7 @@ export function historyReferences(): Reference[] {
 /** The last segment of a file URL, as the detail of its reference item. */
 const fileName = (url: string) => url.slice(url.lastIndexOf("/") + 1);
 
-/** References of "Mapas", in the order of its indicators: wages, poverty and the labor rates, inflation. */
+/** References of "Mapas", in the order of its indicators: wages, poverty and the labor rates, the census, inflation. */
 export function mapsReferences(): Reference[] {
   return [
     {
@@ -230,6 +238,16 @@ export function mapsReferences(): Reference[] {
       ],
       update: "Copiados en el tablero desde cada informe del INDEC: la pobreza se publica cada semestre y la desocupación y las tasas de actividad y de empleo, cada trimestre.",
       note: "El INDEC no publica estos datos por provincia, sino por aglomerado urbano. Los valores con coeficiente de variación mayor al 16 % se marcan para usar con cuidado.",
+    },
+    {
+      ...base.indecCenso,
+      items: censusSnapshot.sources.map((url) => ({
+        label: "Total de población y densidad, por superficie, según departamento, partido o comuna (cuadro 2 de cada jurisdicción)",
+        detail: fileName(url),
+        url,
+      })),
+      update: "Copiados en el tablero desde los cuadros definitivos del INDEC; el censo se hace cada diez años.",
+      note: "La densidad usa la superficie que publica el INDEC. No se muestran las necesidades básicas insatisfechas porque el INDEC no las publica por departamento para este censo. La Antártida Argentina y las islas del Atlántico Sur no se dibujan.",
     },
     {
       ...base.indec,

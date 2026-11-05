@@ -39,7 +39,7 @@ Delivery: exception-ok. Each worktree branch is one slice, merged into `feat/map
 | T4 | S4 | inline | done | e7a5f1e |
 | T5 | S1, S5 | delegated (parallel, worktree `map-exports`) | pending | |
 | T6 | S1, S6 | delegated (parallel, worktree `map-deposits`) | pending | |
-| T7 | S1, S7 | delegated (parallel, worktree `map-census`) | pending | |
+| T7 | S1, S7 | delegated (parallel, worktree `map-census`) | done | a5f046e, see Log |
 | T8 | S5-S7 | inline | pending | |
 
 - **T1:** OEDE registered employment by area: source, parser and tests, KPI entry, references and README.
@@ -70,4 +70,4 @@ Route evidence: the user asked for two parallel writers in two worktrees. The un
   - Label points come from mapshaper `-points inner`; Salta's was moved off its north-eastern lobe. A test checks that each point is inside its polygon.
   - Checks: 187 tests, tsc, lint and build pass. The CDP screenshots of wages and activity show the labels; there are no console errors.
 - **L8 (2026-11-05), user:** "falta agregar exportaciones, depositos y prestamos, y censo 2022, entiendo que los 2 primeros kpi que me mostraste en tabla ya estan que no?" Same setup as S1: three Sonnet writers in three worktrees.
-
+- **L9 (T7, S1, S7):** `?kpi=censo` with `poblacion` (default) and `densidad`, on a new `public/geo/departments.json` (527 fills, 365 KB; labels in `snapshots/department-places.json`). INDEC publishes no NBI table by department for the 2022 census (censo.gob.ar lists none), so there is no `nbi` variant. Data: INDEC definitive tables, one workbook per province, committed as `snapshots/census.json`; its sum plus the 81 people at the Antarctic bases equals INDEC's national total, 45,892,285. Georef's 94028 and 94021 are not drawn (INDEC counts both under 94028); no other code is unmatched. Tests 202 passed, tsc, lint and `pnpm build` clean, `/mapas?kpi=censo[&valor=densidad]` return 200 with real values on `pnpm start`. Not checked in a browser (CDP) by the writer.
