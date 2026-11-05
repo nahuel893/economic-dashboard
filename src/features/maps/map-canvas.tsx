@@ -50,11 +50,20 @@ export function MapCanvas({ view }: { view: MapView }) {
   const mapRef = useRef<MapRef>(null);
   const [tip, setTip] = useState<Tip | null>(null);
   const isPoints = view.geometry === "aglomerados";
+  const isDepartments = view.geometry === "departments";
+  // Places drawn as their own shape or point: the tooltip's place is the hovered feature itself.
+  const ownShape = isPoints || isDepartments;
 
   const fillColor = useMemo((): ExpressionSpecification | string => {
     const [first, ...rest] = Object.entries(areaColors(view));
     return first ? ["match", ["get", "id"], first[0], first[1], ...rest.flat(), NO_DATA_COLOR] : NO_DATA_COLOR;
   }, [view]);
+
+  const departmentFill = useMemo((): ExpressionSpecification | string => {
+    if (!isDepartments) return NO_DATA_COLOR;
+    const [first, ...rest] = view.places;
+    return first ? ["match", ["get", "id"], first.id, first.color, ...rest.flatMap((p) => [p.id, p.color]), NO_DATA_COLOR] : NO_DATA_COLOR;
+  }, [view, isDepartments]);
 
   const pointData = useMemo(
     (): GeoJSONSourceSpecification["data"] => ({
@@ -96,8 +105,8 @@ export function MapCanvas({ view }: { view: MapView }) {
   // The areas that share the hovered value: one area, or every area of the hovered region.
   const highlighted = useMemo(
     () =>
-      tip && !isPoints ? Object.keys(view.areaPlace).filter((area) => view.areaPlace[area] === tip.placeId) : [],
-    [tip, isPoints, view],
+      tip && !ownShape ? Object.keys(view.areaPlace).filter((area) => view.areaPlace[area] === tip.placeId) : [],
+    [tip, ownShape, view],
   );
 
   // A tap anywhere outside the map closes the tooltip; taps on the map are handled by `show`.
@@ -116,12 +125,12 @@ export function MapCanvas({ view }: { view: MapView }) {
     const container = mapRef.current?.getContainer();
     if (!feature || !container) return setTip(null);
     const id = String(feature.properties?.id);
-    const placeId = isPoints ? id : view.areaPlace[id];
+    const placeId = ownShape ? id : view.areaPlace[id];
     if (!placeId) return setTip(null);
     const { x, y } = event.point;
     setTip({
       placeId,
-      areaId: isPoints ? undefined : id,
+      areaId: ownShape ? undefined : id,
       x,
       y,
       flipX: x > container.clientWidth / 2,
@@ -146,7 +155,7 @@ export function MapCanvas({ view }: { view: MapView }) {
         pitchWithRotate={false}
         touchPitch={false}
         maxPitch={0}
-        interactiveLayerIds={[isPoints ? "points" : "area-fill"]}
+        interactiveLayerIds={[isPoints ? "points" : isDepartments ? "department-fill" : "area-fill"]}
         cursor={tip ? "pointer" : undefined}
         onMouseMove={show}
         onMouseOut={() => setTip(null)}
@@ -159,12 +168,27 @@ export function MapCanvas({ view }: { view: MapView }) {
       >
         <NavigationControl showCompass={false} position="top-right" />
 
+        {/* The department shapes load only for the census, under the province borders. */}
+        {isDepartments ? (
+          <Source id="departments" type="geojson" data="/geo/departments.json">
+            <Layer id="department-fill" type="fill" beforeId={beforeId} paint={{ "fill-color": departmentFill, "fill-opacity": 0.88 }} />
+            <Layer id="department-border" type="line" beforeId={beforeId} paint={{ "line-color": BORDER, "line-width": 0.25 }} />
+            <Layer
+              id="department-hover"
+              type="line"
+              beforeId={beforeId}
+              filter={["==", ["get", "id"], tip?.placeId ?? ""]}
+              paint={{ "line-color": INK, "line-width": 2 }}
+            />
+          </Source>
+        ) : null}
+
         <Source id="areas" type="geojson" data="/geo/areas.json">
           <Layer
             id="area-fill"
             type="fill"
             beforeId={beforeId}
-            paint={{ "fill-color": fillColor, "fill-opacity": isPoints ? 0 : 0.88 }}
+            paint={{ "fill-color": fillColor, "fill-opacity": ownShape ? 0 : 0.88 }}
           />
           <Layer id="area-border" type="line" beforeId={beforeId} paint={{ "line-color": BORDER, "line-width": 0.6 }} />
           <Layer
@@ -215,7 +239,7 @@ export function MapCanvas({ view }: { view: MapView }) {
             layout={{
               "text-field": ["get", "label"],
               "text-font": ["Noto Sans Bold"],
-              "text-size": 12,
+              "text-size": isDepartments ? 11 : 12,
               ...(isPoints
                 ? { "text-variable-anchor": ["left", "right", "top", "bottom"], "text-radial-offset": 0.9 }
                 : { "text-anchor": "center" }),

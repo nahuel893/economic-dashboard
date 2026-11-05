@@ -2,11 +2,12 @@
  * The "Mapas" tab: a catalog of the KPIs the map can show, how the URL picks
  * one of them, and the pure work of turning a period's values into colored
  * places. Each KPI is drawn on the geography its source publishes: wages, employment,
- * bank deposits and loans and exports by area, inflation by region (each area takes its region's value) and the EPH
- * KPIs by aglomerado, as points, never painted on provinces.
+ * bank deposits and loans and exports by area, inflation by region (each area takes its region's value), the EPH
+ * KPIs by aglomerado, as points, never painted on provinces, and the census by department.
  */
 import { formatCompact, formatMonth, type Unit } from "@/lib/format";
 import { SOURCE_NAMES } from "@/lib/sources/citations";
+import departmentPlaces from "@/lib/sources/snapshots/department-places.json";
 import { AGLOMERADOS, AREAS, REGIONS, type AreaId, type LabelPoint } from "./geography";
 import type { MapSeries } from "./map-data";
 
@@ -18,10 +19,11 @@ export type MapKpiId =
   | "inflacion"
   | "desocupacion"
   | "actividad"
-  | "exportaciones";
+  | "exportaciones"
+  | "censo";
 
-/** Where values are drawn: area fills, area fills by region, or aglomerado points. */
-export type MapGeometry = "areas" | "regions" | "aglomerados";
+/** Where values are drawn: area fills, area fills by region, aglomerado points, or department fills. */
+export type MapGeometry = "areas" | "regions" | "aglomerados" | "departments";
 
 export type MapVariant = {
   /** URL value (`?valor=`). */
@@ -214,6 +216,25 @@ export const MAP_KPIS: MapKpi[] = [
       },
     ],
   },
+  {
+    id: "censo",
+    label: "Censo 2022",
+    geometry: "departments",
+    unit: "count",
+    source: SOURCE_NAMES.indecCenso,
+    // INDEC publishes no NBI (necesidades básicas insatisfechas) by department for this census, so there is no such variant.
+    variants: [
+      { slug: "poblacion", label: "Población", series: "population", description: "Personas censadas en 2022, según resultados definitivos del INDEC." },
+      {
+        slug: "densidad",
+        label: "Densidad de población",
+        series: "density",
+        description:
+          "Habitantes por kilómetro cuadrado, con la superficie que publica el INDEC para cada departamento, partido o comuna.",
+        unit: "perKm2",
+      },
+    ],
+  },
 ];
 
 /** A KPI's loaded data: one MapSeries per variant, keyed by `MapVariant.series`. */
@@ -228,9 +249,10 @@ const periodFromSlug = (slug: string) => slug.replace("-t", "-Q").replace("-s", 
 
 const ordinal = (n: number) => (n === 1 || n === 3 ? `${n}.er` : `${n}.º`);
 
-/** "junio de 2026", "2.º trimestre de 2026" or "1.er semestre de 2026". */
+/** "junio de 2026", "2.º trimestre de 2026", "1.er semestre de 2026" or a plain year, "2022". */
 export function periodLabel(period: string): string {
   const [year, part] = period.split("-");
+  if (part === undefined) return year;
   if (part.startsWith("Q")) return `${ordinal(Number(part.slice(1)))} trimestre de ${year}`;
   if (part.startsWith("H")) return `${ordinal(Number(part.slice(1)))} semestre de ${year}`;
   return formatMonth(`${period}-01`);
@@ -354,7 +376,13 @@ const DRAWN_UNDER = new Set(["33"]);
 
 type BasePlace = { id: string; name: string; lon?: number; lat?: number; labelAt: LabelPoint };
 
+/** Every drawn department, partido or comuna, named with its province since many share a name ("San Martín"). */
+const DEPARTMENTS: BasePlace[] = (departmentPlaces as { id: string; name: string; province: string; labelAt: number[] }[]).map(
+  ({ id, name, province, labelAt }) => ({ id, name: `${name} (${province})`, labelAt: labelAt as LabelPoint }),
+);
+
 function placesOf(geometry: MapGeometry): BasePlace[] {
+  if (geometry === "departments") return DEPARTMENTS;
   if (geometry === "areas") return AREAS.map(({ id, name, label }) => ({ id, name, labelAt: label }));
   if (geometry === "regions") return REGIONS.map(({ id, name, label }) => ({ id, name, labelAt: label }));
   return [...AGLOMERADOS]
@@ -363,7 +391,7 @@ function placesOf(geometry: MapGeometry): BasePlace[] {
 }
 
 function areaPlaceOf(geometry: MapGeometry): Record<AreaId, string> {
-  if (geometry === "aglomerados") return {};
+  if (geometry === "aglomerados" || geometry === "departments") return {};
   return Object.fromEntries(AREAS.map((area) => [area.id, geometry === "regions" ? area.region : area.id]));
 }
 

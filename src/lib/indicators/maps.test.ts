@@ -42,6 +42,8 @@ const PERIODS: Record<string, string[]> = {
   "actividad/employment": ["2026-Q2"],
   "exportaciones/total": ["2025-H1", "2026-H1"],
   "exportaciones/yearOnYear": ["2026-H1"],
+  "censo/population": ["2022"],
+  "censo/density": ["2022"],
 };
 const periodsOf = (k: MapKpi, v: MapVariant) => PERIODS[`${k.id}/${v.series}`] ?? [];
 
@@ -56,7 +58,16 @@ describe("MAP_KPIS", () => {
       ["desocupacion", "aglomerados", "percent"],
       ["actividad", "aglomerados", "percent"],
       ["exportaciones", "areas", "usdMillions"],
+      ["censo", "departments", "count"],
     ]);
+  });
+
+  it("offers the census population first, then the density, with no NBI since INDEC publishes none by department", () => {
+    expect(kpi("censo").variants.map((v) => [v.slug, v.series, v.unit])).toEqual([
+      ["poblacion", "population", undefined],
+      ["densidad", "density", "perKm2"],
+    ]);
+    expect(kpi("censo").source).toBe("INDEC, Censo 2022");
   });
 
   it("lists poverty variants with % of persons first, and inflation monthly then year-on-year", () => {
@@ -78,7 +89,7 @@ describe("MAP_KPIS", () => {
   });
 
   it("cites each source by its short name", () => {
-    expect(MAP_KPIS.map((k) => k.source)).toEqual(["OEDE (SIPA)", "OEDE (SIPA)", "BCRA", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, EPH", "INDEC, EPH", "INDEC, OPEX"]);
+    expect(MAP_KPIS.map((k) => k.source)).toEqual(["OEDE (SIPA)", "OEDE (SIPA)", "BCRA", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, EPH", "INDEC, EPH", "INDEC, OPEX", "INDEC, Censo 2022"]);
   });
 });
 
@@ -153,6 +164,10 @@ describe("periodLabel", () => {
     expect(periodLabel("2026-Q2")).toBe("2.º trimestre de 2026");
     expect(periodLabel("2026-Q3")).toBe("3.er trimestre de 2026");
     expect(periodLabel("2026-Q4")).toBe("4.º trimestre de 2026");
+  });
+
+  it("names a census year as the year itself", () => {
+    expect(periodLabel("2022")).toBe("2022");
   });
 });
 
@@ -295,6 +310,34 @@ describe("buildMapView", () => {
     expect(view.places.find((p) => p.id === "33")).toMatchObject({ highCv: false });
     expect(view.areaPlace).toEqual({});
     expect(areaColors(view)).toEqual({});
+  });
+
+  it("draws the census on one place per department, labeled inside it, with no area fills to color", () => {
+    const census: MapKpiData = {
+      population: series([{ period: "2022", values: { "06028": { value: 584_827 }, "02007": { value: 223_554 } } }]),
+      density: series([{ period: "2022", values: { "06028": { value: 4523 } } }]),
+    };
+    const view = buildMapView(resolveMapSelection({ kpi: "censo" }, periodsOf), census)!;
+    expect(view.geometry).toBe("departments");
+    expect(view.places).toHaveLength(527);
+    expect(view.places.find((p) => p.id === "06028")).toMatchObject({
+      name: "Almirante Brown (Buenos Aires)",
+      value: 584_827,
+      label: "585 mil",
+      labelAt: expect.any(Array),
+    });
+    expect(view.places.find((p) => p.id === "94015")).toMatchObject({ name: "Ushuaia (Tierra del Fuego)", value: null, label: null });
+    expect(view.areaPlace).toEqual({});
+    expect(view.periodLabel).toBe("2022");
+    const density = buildMapView(resolveMapSelection({ kpi: "censo", valor: "densidad" }, periodsOf), census)!;
+    expect(density.unit).toBe("perKm2");
+    expect(density.places.find((p) => p.id === "06028")!.label).toBe("4,52 mil");
+  });
+
+  it("keeps the province view of the other KPIs free of departments", () => {
+    const view = buildMapView(resolveMapSelection({ kpi: "salarios" }, periodsOf), wages)!;
+    expect(view.places).toHaveLength(AREAS.length);
+    expect(Object.keys(view.areaPlace)).toHaveLength(AREAS.length);
   });
 
   it("is null when the selection has no period", () => {

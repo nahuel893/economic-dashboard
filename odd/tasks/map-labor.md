@@ -39,7 +39,7 @@ Delivery: exception-ok. Each worktree branch is one slice, merged into `feat/map
 | T4 | S4 | inline | done | e7a5f1e |
 | T5 | S1, S5 | delegated (parallel, worktree `map-exports`) | done | 1860a83 |
 | T6 | S1, S6 | delegated (parallel, worktree `map-deposits`) | done | 140139a, 1b4b473 |
-| T7 | S1, S7 | delegated (parallel, worktree `map-census`) | pending | |
+| T7 | S1, S7 | delegated (parallel, worktree `map-census`) | done | a5f046e, d1b1c5d |
 | T8 | S5-S7 | inline | pending | |
 
 - **T1:** OEDE registered employment by area: source, parser and tests, KPI entry, references and README.
@@ -72,3 +72,4 @@ Route evidence: the user asked for two parallel writers in two worktrees. The un
 - **L8 (2026-11-05), user:** "falta agregar exportaciones, depositos y prestamos, y censo 2022, entiendo que los 2 primeros kpi que me mostraste en tabla ya estan que no?" Same setup as S1: three Sonnet writers in three worktrees.
 - T6 (feat/map-deposits): `?kpi=depositos` from BCRA `vol4_ser.txt` (last quarter 2026-Q1), Buenos Aires from the BCRA's own GBA/rest split, compact labels "$ 98,2 B"; `pnpm test` 197 passed, build, tsc and lint clean, `/mapas?kpi=depositos` (3 variants) 200 on port 3204.
 - T5 (map-exports): INDEC OPEX annex `opex_anexo_cuadros_02_09_26.xls`, sheet "Region-prov 2016-2026 semestre", read through a committed snapshot (`scripts/maps/opex-snapshot.mts`); first half of each year 2016-2026, Buenos Aires total on both `06-gba` and `06-resto` with a period note; `pnpm test` 197 passed, build, tsc and lint clean, `/mapas?kpi=exportaciones` (and `&valor=variacion`) returned 200 with real values.
+- **L9 (T7, S1, S7):** `?kpi=censo` with `poblacion` (default) and `densidad`, on a new `public/geo/departments.json` (527 fills, 365 KB; labels in `snapshots/department-places.json`). INDEC publishes no NBI table by department for the 2022 census (censo.gob.ar lists none), so there is no `nbi` variant. Data: INDEC definitive tables, one workbook per province, committed as `snapshots/census.json`; its sum plus the 81 people at the Antarctic bases equals INDEC's national total, 45,892,285. Georef's 94028 and 94021 are not drawn (INDEC counts both under 94028); no other code is unmatched. Tests 202 passed, tsc, lint and `pnpm build` clean, `/mapas?kpi=censo[&valor=densidad]` return 200 with real values on `pnpm start`. Not checked in a browser (CDP) by the writer.

@@ -6,6 +6,7 @@ import { citationParts } from "@/lib/sources/citations";
 import { INDEC_SERIES, SOURCES } from "@/lib/sources/clients";
 import { MACRO_SOURCES } from "./macro";
 import { BCRA_BALANCES_URL, EMPLOYMENT_URL, IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
+import censusSnapshot from "@/lib/sources/snapshots/census.json";
 import povertySnapshot from "@/lib/sources/snapshots/eph-poverty.json";
 import ratesSnapshot from "@/lib/sources/snapshots/eph-rates.json";
 import unemploymentSnapshot from "@/lib/sources/snapshots/eph-unemployment.json";
@@ -68,11 +69,11 @@ describe("mapsReferences", () => {
   const urls = (id: string) => refs.find((ref) => ref.id === id)!.items.map((item) => item.url);
 
   it("lists the sources of the map in the order of its indicators", () => {
-    expect(refs.map((ref) => ref.id)).toEqual(["oede", "bcra", "indecEph", "indec", "indecOpex"]);
+    expect(refs.map((ref) => ref.id)).toEqual(["oede", "bcra", "indecEph", "indec", "indecOpex", "indecCenso"]);
   });
 
   it("names each source as the map cites it", () => {
-    expect(refs.map((ref) => ref.name)).toEqual(["OEDE (SIPA)", "BCRA", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, OPEX"]);
+    expect(refs.map((ref) => ref.name)).toEqual(["OEDE (SIPA)", "BCRA", "INDEC, EPH", "INDEC vía datos.gob.ar", "INDEC, OPEX", "INDEC, Censo 2022"]);
     for (const ref of refs) expect(citationParts(ref.name)).toEqual([{ name: ref.name, id: ref.id }]);
   });
 
@@ -84,6 +85,11 @@ describe("mapsReferences", () => {
     expect(urls("oede")).toEqual([WAGES_URL, EMPLOYMENT_URL]);
     expect(urls("bcra")).toEqual([BCRA_BALANCES_URL]);
     expect(urls("indecEph")).toEqual([...povertySnapshot.sources, ...unemploymentSnapshot.sources, ...ratesSnapshot.sources]);
+  });
+
+  it("links the 24 provincial census tables the snapshot was built from", () => {
+    expect(urls("indecCenso")).toEqual(censusSnapshot.sources);
+    expect(urls("indecCenso")).toHaveLength(24);
   });
 
   it("documents the IPC series of every region", () => {

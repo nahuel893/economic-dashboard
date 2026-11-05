@@ -8,6 +8,8 @@ const GEOMETRY_NOTES: Record<MapView["geometry"], string> = {
   regions: "Cada provincia toma el valor de su región: el INDEC publica el IPC por región, no por provincia.",
   aglomerados:
     "Cada punto es un aglomerado urbano de la EPH: el INDEC no publica este dato por provincia ni fuera de las ciudades.",
+  departments:
+    "Cada departamento, partido o comuna con su valor: el Censo 2022 los publica con esta apertura, no por provincia. El mapa no dibuja la Antártida Argentina ni las islas del Atlántico Sur.",
 };
 
 function Swatch({ color, ring = false }: { color: string; ring?: boolean }) {

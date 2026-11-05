@@ -73,7 +73,7 @@ One line chart per variable (dollars, gap, inflation, economic activity, country
 
 ### Mapas: where things happen
 
-One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a KPI selector, its value variants and a period selector that starts at the latest data. KPI, value and period live in the URL (`?kpi=pobreza&valor=hogares&periodo=2026-s1`; employment is `?kpi=empleo`, with `valor=variacion` by default or `valor=puestos`; exports are `?kpi=exportaciones`, with `valor=total` by default or `valor=variacion`).
+One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a KPI selector, its value variants and a period selector that starts at the latest data. KPI, value and period live in the URL (`?kpi=pobreza&valor=hogares&periodo=2026-s1`; employment is `?kpi=empleo`, with `valor=variacion` by default or `valor=puestos`; exports are `?kpi=exportaciones`, with `valor=total` by default or `valor=variacion`; the census is `?kpi=censo`, with `valor=poblacion` by default or `valor=densidad`).
 
 | KPI | Drawn on | Periods |
 |-----|----------|---------|
@@ -85,15 +85,17 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 | Unemployment rate (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
 | Activity and employment rates (INDEC, EPH) | The 31 EPH urban areas as points | Quarterly |
 | Exports of goods, millions of USD or year-on-year % change (INDEC, OPEX) | Provinces; INDEC reports Buenos Aires as one province, so both of its halves show the same total | First half of each year (provisional for the latest years) |
+| Census 2022: population and density, inhabitants per km² (INDEC) | The 527 departments, partidos and comunas | Fixed (2022) |
 
 - Each value is shown where its source measures it: INDEC publishes poverty and the labor rates only for urban areas, never by province, so they are points. Survey estimates with a coefficient of variation above 16 % carry a "usar con cuidado" mark.
 - INDEC publishes exports by province of origin per half-year (the first half in September, the full year in March); the map uses the first half of each year so the year-on-year change compares like with like. Exports with an undetermined origin, from abroad or from the continental shelf are left out. The data are a committed snapshot of INDEC's legacy `.xls` annex: refresh it with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/opex-snapshot.mts` (needs LibreOffice).
 - OEDE publishes provincial employment per quarter, not per month, in a workbook with one sheet per province; the map reads the TOTAL row of each and computes the year-on-year change itself.
 - Deposits and loans (`?kpi=depositos`, with `valor=depositos` by default, `valor=prestamos` or `valor=relacion`, loans as % of deposits) come from the BCRA's `vol4_ser.txt` "Información por provincia" file, read at runtime. It has no labels, so the parser checks its layout against the data (the provinces must add up to the national total) and fails instead of mislabelling. Balances belong to the province of the bank branch, not of the depositor. The BCRA already splits Buenos Aires into Gran Buenos Aires and the rest of the province, so no total is split by guesswork. Peso amounts label as "$ 98,2 B" (billones, 10^12) or "$ 12,3 mil M" (mil millones).
+- The census map has no NBI (unmet basic needs) variant: INDEC publishes no NBI table by department for the 2022 census. Density uses the area INDEC publishes for each department. The Antarctic sector and the South Atlantic islands (INDEC's department 94028, 81 people at Antarctic bases) are not drawn, like in the other maps. The department shapes (`public/geo/departments.json`) load only when the census is selected.
 - Hover or tap a place for its value, period and source; a table under the map lists the same values.
 - The Malvinas, the other South Atlantic islands and the Antarctic sector are drawn as outlines with the map's own "Islas Malvinas" label.
 - Ctrl + wheel (or two fingers) moves the map, so it never takes over the page scroll.
-- The boundaries come from IGN through georef and are rebuilt with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/geo/build-geo.mjs`. EPH poverty, unemployment, activity and employment are committed snapshots: refresh them after each INDEC release with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/eph-snapshots.mts`.
+- The boundaries come from IGN through georef and are rebuilt with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/geo/build-geo.mjs`. EPH poverty, unemployment, activity and employment are committed snapshots: refresh them after each INDEC release with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/eph-snapshots.mts`. The census is a committed snapshot too, built with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/census-snapshot.mts --from <directory with INDEC's 24 provincial tables>` (see the script header; censo.gob.ar does not send its intermediate certificate, so Node cannot download them itself). It only needs to run again if INDEC corrects the tables.
 
 ## Data sources
 
@@ -107,6 +109,7 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 | [OEDE, Ministerio de Capital Humano](https://www.argentina.gob.ar/node/142211) | Wages (monthly) and registered employment (quarterly) by province (Mapas) |
 | [INDEC, EPH](https://www.indec.gob.ar) | Poverty, indigence, unemployment, activity and employment by urban area (Mapas) |
 | [INDEC, OPEX](https://www.indec.gob.ar) | Goods exports by province of origin, first half of each year (Mapas) |
+| [INDEC, Censo 2022](https://censo.gob.ar/index.php/datos_definitivos/) | Population and density by department (Mapas) |
 | [IGN via georef](https://datosgobar.github.io/georef-ar-api/) and [OpenFreeMap](https://openfreemap.org) | Boundaries and basemap (Mapas) |
 
 Every card and chart cites its source by name, linked to the full references at the bottom of the page: endpoints, BCRA variable numbers, INDEC series ids and how often each one is queried (`src/lib/indicators/references.ts`).

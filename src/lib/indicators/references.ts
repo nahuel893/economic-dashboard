@@ -5,6 +5,7 @@
 import { SOURCE_NAMES, type SourceId } from "@/lib/sources/citations";
 import { BCRA_VARIABLES, INDEC_SERIES } from "@/lib/sources/clients";
 import { BCRA_BALANCES_URL, EMPLOYMENT_URL, IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
+import censusSnapshot from "@/lib/sources/snapshots/census.json";
 import povertySnapshot from "@/lib/sources/snapshots/eph-poverty.json";
 import ratesSnapshot from "@/lib/sources/snapshots/eph-rates.json";
 import unemploymentSnapshot from "@/lib/sources/snapshots/eph-unemployment.json";
@@ -104,6 +105,13 @@ const base = {
     url: "https://www.indec.gob.ar",
     description: "Exportaciones de bienes según la provincia donde se produce lo exportado.",
   },
+  indecCenso: {
+    id: "indecCenso",
+    name: SOURCE_NAMES.indecCenso,
+    title: "INDEC, Censo Nacional de Población, Hogares y Viviendas 2022. Resultados definitivos",
+    url: "https://censo.gob.ar/index.php/datos_definitivos/",
+    description: "Población y superficie de cada departamento, partido y comuna del país.",
+  },
 } as const satisfies Record<SourceId, Omit<Reference, "items" | "update" | "note">>;
 
 const INFLATION_NOTE = "La inflación mensual e interanual son datos del INDEC.";
@@ -197,7 +205,7 @@ export function historyReferences(): Reference[] {
 /** The last segment of a file URL, as the detail of its reference item. */
 const fileName = (url: string) => url.slice(url.lastIndexOf("/") + 1);
 
-/** References of "Mapas", in the order of its indicators: wages and employment, deposits and loans, poverty and the labor rates, inflation, exports. */
+/** References of "Mapas", in the order of its indicators: wages and employment, deposits and loans, poverty and the labor rates, inflation, exports, the census. */
 export function mapsReferences(): Reference[] {
   return [
     {
@@ -273,6 +281,16 @@ export function mapsReferences(): Reference[] {
       })),
       update: "Copiado en el tablero desde el informe del INDEC, que lo publica cada semestre: el primer semestre en septiembre y el año completo en marzo; el mapa usa el primer semestre.",
       note: "Los datos de los últimos años son provisorios. El INDEC informa Buenos Aires como una sola provincia, sin la Ciudad: el Gran Buenos Aires y el resto de la provincia muestran el mismo total. Se excluyen las exportaciones de origen indeterminado y las del extranjero y la plataforma continental. La variación interanual la calcula este tablero.",
+    },
+    {
+      ...base.indecCenso,
+      items: censusSnapshot.sources.map((url) => ({
+        label: "Total de población y densidad, por superficie, según departamento, partido o comuna (cuadro 2 de cada jurisdicción)",
+        detail: fileName(url),
+        url,
+      })),
+      update: "Copiados en el tablero desde los cuadros definitivos del INDEC; el censo se hace cada diez años.",
+      note: "La densidad usa la superficie que publica el INDEC. No se muestran las necesidades básicas insatisfechas porque el INDEC no las publica por departamento para este censo. La Antártida Argentina y las islas del Atlántico Sur no se dibujan.",
     },
   ];
 }

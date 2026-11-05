@@ -8,6 +8,7 @@ import {
   findOedeWorkbookUrl,
   parseBcraProvinceBalances,
   parseEphQuarterly,
+  censusSeries,
   parseOedeEmployment,
   parseOedeWages,
   parseOpexSemesters,
@@ -399,5 +400,50 @@ describe("parseOpexSemesters", () => {
   it("fails on a province it cannot place", () => {
     const rows = opexRows.map((row) => (row[1] === "Salta" ? [row[0], "Atlantida", ...row.slice(2)] : row));
     expect(() => parseOpexSemesters(rows)).toThrow(/Atlantida/);
+  });
+});
+
+describe("censusSeries", () => {
+  const header = [["Cuadro 2.6. Provincia. Total de población y densidad, por superficie, según departamento. Año 2022"], ["Código", "Departamento", "Superficie en km2", "Año", null]];
+  const cordoba = [
+    ...header,
+    [14, "Total", 164707.8, 3840905, 23.3],
+    [14014, "Calamuchita", 4642.5, 56892, 12.3],
+    [14021, "Capital", 562, 1505250, 2678.3],
+    ["Notas: ...", null, null, null, null],
+  ];
+  const buenosAires = [...header, ["06", "Total", 305907.4, 17523996, 57.2], ["06", "24 Partidos del Gran Buenos Aires", 3773.3, 10849398, 2875.3], [6028, "Almirante Brown", 129.3, 584827, 4523.0239752513535]];
+  const tierraDelFuego = [
+    ...header,
+    [94, "Total", 910324.4, 185732, 0.2],
+    [94028, "Antártida Argentina e Islas del Atlántico Sur", 889626.1, 81, "///"],
+    [null, "Antártida Argentina", 873718.4, "///", "///"],
+    [94008, "Río Grande", 6567.8, 99241, 15.1],
+  ];
+
+  it("reads one value per department, padding the code to INDEC's five digits and rounding the density to one decimal", () => {
+    const { population, density } = censusSeries([cordoba, buenosAires]);
+    expect(population.periods).toHaveLength(1);
+    expect(population.periods[0].period).toBe("2022");
+    expect(population.periods[0].values).toEqual({
+      "14014": { value: 56892 },
+      "14021": { value: 1505250 },
+      "06028": { value: 584827 },
+    });
+    expect(density.periods[0].values["06028"]).toEqual({ value: 4523 });
+    expect(density.periods[0].values["14014"]).toEqual({ value: 12.3 });
+  });
+
+  it("skips province totals, sub-totals, rows without a code and the Antarctic department, which has no density", () => {
+    const { population } = censusSeries([tierraDelFuego, buenosAires]);
+    expect(Object.keys(population.periods[0].values)).toEqual(["94008", "06028"]);
+  });
+
+  it("says in the period's note that the Antarctic sector is not included", () => {
+    expect(censusSeries([cordoba]).density.periods[0].note).toMatch(/Antártida/);
+  });
+
+  it("rejects a department listed twice", () => {
+    expect(() => censusSeries([cordoba, cordoba])).toThrow(/14014/);
   });
 });
