@@ -28,7 +28,7 @@ pnpm dev            # http://localhost:3000
 | `pnpm test` | Unit tests (parsers, statistics, history windows) |
 | `pnpm lint` | ESLint |
 
-No environment variables are needed: every source is a free, public API.
+No environment variables are needed: every source is a free, public API. The Precios tab reads the SEPA files published by the daily workflow (see below); `SEPA_DATA_URL` points it at another copy, for example a local one.
 
 ## What's inside
 
@@ -97,6 +97,15 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 - Ctrl + wheel (or two fingers) moves the map, so it never takes over the page scroll.
 - The boundaries come from IGN through georef and are rebuilt with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/geo/build-geo.mjs`. EPH poverty, unemployment, activity and employment are committed snapshots: refresh them after each INDEC release with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/eph-snapshots.mts`. The census is a committed snapshot too, built with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/maps/census-snapshot.mts --from <directory with INDEC's 24 provincial tables>` (see the script header; censo.gob.ar does not send its intermediate certificate, so Node cannot download them itself). It only needs to run again if INDEC corrects the tables.
 
+### Precios: where it is cheapest
+
+Search any product with a barcode (by name, brand or barcode) and see its list price at every supermarket branch that sells it, as a point on the map colored by price, with the cheapest, median and highest price and a table of every branch. The product lives in the URL (`/precios?producto=7790742363107`).
+
+- The data are SEPA (Precios Claros), where the large chains report every product's price at every branch each day: one ZIP of about 325 MB (1.6 GB unzipped, about 14 million prices, 77,000 products, 2,700 branches). That is too big to read on a request, so `.github/workflows/sepa.yml` builds it every day at 17:40 (Argentina), after SEPA publishes, with `scripts/prices/build-sepa.mts`, and uploads the result to the `sepa-data` release: a product index (about 2 MB gzipped), a branch list and one binary prices file (about 85 MB, six bytes per price). Run the workflow by hand from the Actions tab the first time.
+- The app keeps the index in memory and searches it on the server (`/api/precios?q=`, a few milliseconds once warm). A product's prices are one HTTP range request into the prices file, about 1 KB on average, so picking a product never downloads the whole day.
+- Only list prices of products with a barcode: chain-internal codes (produce, deli by weight) mean different things at each chain. A chain whose archive arrives damaged is skipped that day and listed in `sepa-latest.json`; the build fails, keeping the previous day, if the day looks incomplete.
+- To try it locally, build a day with `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/prices/build-sepa.mts --out <dir>` (add `--zip <file>` to reuse a downloaded archive), serve that directory over HTTP with byte-range support and start the app with `SEPA_DATA_URL=<that URL>`.
+
 ## Data sources
 
 | Source | Used for |
@@ -110,7 +119,8 @@ One navigable map of Argentina (MapLibre on OpenFreeMap's light basemap) with a 
 | [INDEC, EPH](https://www.indec.gob.ar) | Poverty, indigence, unemployment, activity and employment by urban area (Mapas) |
 | [INDEC, OPEX](https://www.indec.gob.ar) | Goods exports by province of origin, first half of each year (Mapas) |
 | [INDEC, Censo 2022](https://censo.gob.ar/index.php/datos_definitivos/) | Population and density by department (Mapas) |
-| [IGN via georef](https://datosgobar.github.io/georef-ar-api/) and [OpenFreeMap](https://openfreemap.org) | Boundaries and basemap (Mapas) |
+| [IGN via georef](https://datosgobar.github.io/georef-ar-api/) and [OpenFreeMap](https://openfreemap.org) | Boundaries and basemap (Mapas, Precios) |
+| [SEPA, Precios Claros](https://datos.produccion.gob.ar/dataset/sepa-precios) | Daily list prices by product and supermarket branch (Precios) |
 
 Every card and chart cites its source by name, linked to the full references at the bottom of the page: endpoints, BCRA variable numbers, INDEC series ids and how often each one is queried (`src/lib/indicators/references.ts`).
 
@@ -120,8 +130,8 @@ If a source fails, only its tiles show "No disponible"; the rest of the page sti
 
 ```text
 src/
-├── app/               routes: / (Hoy), /panel, /historico, /api/hot
-├── features/          UI by feature: hot, macro, compare, panel, history
+├── app/               routes: / (Hoy), /panel, /historico, /mapas, /precios, /api/hot, /api/precios
+├── features/          UI by feature: hot, macro, compare, panel, history, maps, prices
 ├── components/        shared UI (shadcn/ui, nav, tiles)
 └── lib/
     ├── sources/       HTTP clients and response parsers
