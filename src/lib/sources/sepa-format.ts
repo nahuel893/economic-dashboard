@@ -70,7 +70,7 @@ export function writeEntries(entries: PriceEntry[], target: Uint8Array, at = 0):
   return offset;
 }
 
-export function encodeEntries(entries: PriceEntry[]): Uint8Array {
+export function encodeEntries(entries: PriceEntry[]): Uint8Array<ArrayBuffer> {
   const bytes = new Uint8Array(entries.length * ENTRY_BYTES);
   writeEntries(entries, bytes);
   return bytes;
