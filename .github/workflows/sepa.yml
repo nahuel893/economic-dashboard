@@ -29,6 +29,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+          # The build uses Node alone. Without this, setup-node reads packageManager
+          # (pnpm) from package.json and fails looking for pnpm to cache its store.
+          package-manager-cache: false
 
       - name: Build the day's files
         run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/prices/build-sepa.mts --out sepa-out
