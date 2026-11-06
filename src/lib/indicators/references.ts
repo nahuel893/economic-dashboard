@@ -27,6 +27,8 @@ export type Reference = {
   note?: string;
 };
 
+const SEPA_DATASET_URL = "https://datos.produccion.gob.ar/dataset/sepa-precios";
+
 const DOLLAR_KINDS = "oficial, blue, MEP, contado con liquidación y cripto";
 const ARGENTINA_DATOS_API = "https://api.argentinadatos.com";
 const DATOS_SERIES_API = "https://apis.datos.gob.ar/series/api/series/?ids=";
@@ -111,6 +113,13 @@ const base = {
     title: "INDEC, Censo Nacional de Población, Hogares y Viviendas 2022. Resultados definitivos",
     url: "https://censo.gob.ar/index.php/datos_definitivos/",
     description: "Población y superficie de cada departamento, partido y comuna del país.",
+  },
+  sepa: {
+    id: "sepa",
+    name: SOURCE_NAMES.sepa,
+    title: "Secretaría de Comercio Interior, Precios Claros, base SEPA (Sistema Electrónico de Publicidad de Precios Argentinos)",
+    url: SEPA_DATASET_URL,
+    description: "Precios de lista que las grandes cadenas de supermercados informan cada día, por producto y sucursal.",
   },
 } as const satisfies Record<SourceId, Omit<Reference, "items" | "update" | "note">>;
 
@@ -291,6 +300,29 @@ export function mapsReferences(): Reference[] {
       })),
       update: "Copiados en el tablero desde los cuadros definitivos del INDEC; el censo se hace cada diez años.",
       note: "La densidad usa la superficie que publica el INDEC. No se muestran las necesidades básicas insatisfechas porque el INDEC no las publica por departamento para este censo. La Antártida Argentina y las islas del Atlántico Sur no se dibujan.",
+    },
+  ];
+}
+
+/** References of "Precios". */
+export function pricesReferences(): Reference[] {
+  return [
+    {
+      ...base.sepa,
+      items: [
+        {
+          label: "Archivo diario con los comercios, sus sucursales y los precios de cada producto (un ZIP por día de la semana)",
+          detail: "Precios Claros - Base SEPA",
+          url: SEPA_DATASET_URL,
+        },
+        {
+          label: "Copia procesada del último día: índice de productos, sucursales y precios",
+          detail: "Release sepa-data del repositorio del tablero",
+          url: "https://github.com/nahuel893/economic-dashboard/releases/tag/sepa-data",
+        },
+      ],
+      update: "Se procesa todos los días a las 17:40, después de que SEPA publica el archivo del día.",
+      note: "Se muestra el precio de lista, sin promociones. Solo los productos con código de barras: los códigos internos de cada cadena (frutas, verduras, fiambres por peso) no se pueden comparar entre cadenas. Las sucursales sin ubicación válida no se dibujan. Si el archivo de una cadena viene dañado ese día, esa cadena no aparece hasta el siguiente.",
     },
   ];
 }

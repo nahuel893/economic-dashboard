@@ -12,7 +12,7 @@ import ratesSnapshot from "@/lib/sources/snapshots/eph-rates.json";
 import unemploymentSnapshot from "@/lib/sources/snapshots/eph-unemployment.json";
 import opexSnapshot from "@/lib/sources/snapshots/opex-exports.json";
 import { REGIONS } from "./geography";
-import { historyReferences, homeReferences, mapsReferences } from "./references";
+import { historyReferences, homeReferences, mapsReferences, pricesReferences } from "./references";
 
 const details = (refs: ReturnType<typeof homeReferences>, id: string) =>
   refs.find((ref) => ref.id === id)!.items.map((item) => item.detail);
@@ -94,5 +94,22 @@ describe("mapsReferences", () => {
 
   it("documents the IPC series of every region", () => {
     expect(details(refs, "indec")).toEqual(REGIONS.map((r) => `Serie ${IPC_REGION_SERIES[r.id]} (nivel general)`));
+  });
+});
+
+describe("pricesReferences", () => {
+  const refs = pricesReferences();
+
+  it("cites SEPA as the price cards and table do", () => {
+    expect(refs.map((ref) => [ref.id, ref.name])).toEqual([["sepa", "SEPA"]]);
+    expect(citationParts(refs[0].name)).toEqual([{ name: "SEPA", id: "sepa" }]);
+  });
+
+  it("links the dataset and the processed daily files", () => {
+    expect(refs[0].url).toBe("https://datos.produccion.gob.ar/dataset/sepa-precios");
+    expect(refs[0].items.map((item) => item.url)).toEqual([
+      "https://datos.produccion.gob.ar/dataset/sepa-precios",
+      "https://github.com/nahuel893/economic-dashboard/releases/tag/sepa-data",
+    ]);
   });
 });

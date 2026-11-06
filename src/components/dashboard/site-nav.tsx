@@ -9,9 +9,10 @@ const TABS = [
   { href: "/panel", label: "Panel" },
   { href: "/historico", label: "Histórico" },
   { href: "/mapas", label: "Mapas" },
+  { href: "/precios", label: "Precios" },
 ] as const;
 
-/** Tabs between the live dashboard, the one-screen panel, the historical series and the maps. */
+/** Tabs between the live dashboard, the one-screen panel, the historical series, the maps and the price finder. */
 export function SiteNav() {
   const pathname = usePathname();
   return (
@@ -29,7 +30,7 @@ export function SiteNav() {
                 href={tab.href}
                 aria-current={current ? "page" : undefined}
                 className={cn(
-                  "-mb-px block border-b-2 px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+                  "-mb-px block border-b-2 px-2.5 py-2 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-ring sm:px-4",
                   current
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground",
