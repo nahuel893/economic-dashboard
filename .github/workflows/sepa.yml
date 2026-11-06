@@ -1,0 +1,56 @@
+# Builds the day's SEPA prices into the compact files the Precios tab reads and
+# publishes them as assets of the `sepa-data` release (see
+# src/lib/sources/sepa-format.ts). SEPA refreshes its daily archive around
+# 16:20 Argentina time; this runs after that, and by hand from the Actions tab.
+name: SEPA prices
+
+on:
+  schedule:
+    - cron: "40 20 * * *" # 17:40 in Argentina (UTC-3)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sepa-prices
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE: sepa-data
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Build the day's files
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/prices/build-sepa.mts --out sepa-out
+
+      - name: Publish to the release
+        run: |
+          gh release view "$RELEASE" > /dev/null 2>&1 ||
+            gh release create "$RELEASE" --latest=false --title "SEPA prices data" \
+              --notes "Daily SEPA price files for the Precios tab, built by .github/workflows/sepa.yml. Not a software release."
+          date=$(jq -r .date sepa-out/sepa-latest.json)
+          gh release upload "$RELEASE" --clobber \
+            "sepa-out/sepa-branches-$date.json" "sepa-out/sepa-products-$date.json.gz" "sepa-out/sepa-prices-$date.bin"
+          # Last, so it never names files that are not uploaded yet.
+          gh release upload "$RELEASE" --clobber sepa-out/sepa-latest.json
+
+      - name: Keep the two newest days
+        # The app may still hold the previous day's index for a while after the switch.
+        run: |
+          gh release view "$RELEASE" --json assets --jq '.assets[].name' > assets.txt
+          # Each old day comes from the asset names, so grep always finds its files.
+          for day in $(grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' assets.txt | sort -u | head -n -2); do
+            grep -F -- "-$day." assets.txt | while read -r name; do
+              gh release delete-asset "$RELEASE" "$name" --yes
+            done
+          done
