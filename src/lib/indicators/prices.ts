@@ -37,20 +37,26 @@ const hit = ([ean, name, brand, , count, min, max]: SepaProduct): ProductHit => 
 
 /**
  * Products whose name or brand has a word starting with each word of the
- * query, or whose barcode starts with it; in index order, which puts the most
- * widely sold first.
+ * query, or whose barcode starts with it. Names that start with the query's
+ * first word come first ("leche" finds milk before dulce de leche); within
+ * each group, index order puts the most widely sold first.
  */
 export function searchProducts(products: SepaProduct[], index: string[], query: string, limit = SEARCH_LIMIT): ProductHit[] {
   const normalized = normalizeText(query);
   if (normalized.length < MIN_QUERY) return [];
   const barcode = /^\d{4,14}$/.test(normalized) ? normalized.replace(/^0+/, "") : null;
   const words = normalized.split(" ").map((word) => ` ${word}`);
-  const hits: ProductHit[] = [];
-  for (let i = 0; i < products.length && hits.length < limit; i++) {
-    const matches = (barcode !== null && products[i][0].startsWith(barcode)) || words.every((word) => index[i].includes(word));
-    if (matches) hits.push(hit(products[i]));
+  const leading: ProductHit[] = [];
+  const others: ProductHit[] = [];
+  // The whole index is scanned (a few milliseconds) unless enough names lead with the first word.
+  for (let i = 0; i < products.length && leading.length < limit; i++) {
+    if (barcode !== null && products[i][0].startsWith(barcode)) leading.push(hit(products[i]));
+    else if (words.every((word) => index[i].includes(word))) {
+      if (index[i].startsWith(words[0])) leading.push(hit(products[i]));
+      else if (others.length < limit) others.push(hit(products[i]));
+    }
   }
-  return hits;
+  return [...leading, ...others].slice(0, limit);
 }
 
 export type PricePoint = {

@@ -23,6 +23,19 @@ describe("searchProducts", () => {
     expect(searchProducts(PRODUCTS, INDEX, "eche")).toEqual([]);
   });
 
+  it("puts products whose name starts with the first word ahead, keeping the store order within each group", () => {
+    expect(searchProducts(PRODUCTS, INDEX, "leche serenisima").map((h) => h.ean)).toEqual(["7790742067005"]);
+    const products: SepaProduct[] = [
+      ["1", "DULCE DE LECHE LA SERENISIMA", "LA SERENISIMA", 0, 9, 1, 1],
+      ["2", "LECHE ENTERA LA SERENISIMA", "LA SERENISIMA", 9, 8, 1, 1],
+      ["3", "CREMA DE LECHE LA SERENISIMA", "LA SERENISIMA", 17, 7, 1, 1],
+      ["4", "LECHE DESCREMADA LA SERENISIMA", "LA SERENISIMA", 24, 6, 1, 1],
+    ];
+    const index = buildSearchIndex(products);
+    expect(searchProducts(products, index, "leche serenisima").map((h) => h.ean)).toEqual(["2", "4", "1", "3"]);
+    expect(searchProducts(products, index, "leche serenisima", 3).map((h) => h.ean)).toEqual(["2", "4", "1"]);
+  });
+
   it("ignores accents and case in the query", () => {
     expect(searchProducts(PRODUCTS, INDEX, "CAFÉ cabrales").map((h) => h.ean)).toEqual(["7790070411709"]);
     expect(searchProducts(PRODUCTS, INDEX, "cafe").map((h) => h.ean)).toEqual(["7790070411709"]);
