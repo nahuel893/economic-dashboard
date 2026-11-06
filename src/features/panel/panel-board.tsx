@@ -38,19 +38,6 @@ function lastDate(variable: PanelVariable) {
   return variable.frequency === "monthly" ? formatMonth(variable.last.date) : formatDate(variable.last.date);
 }
 
-function Sparkline({ variable }: { variable: PanelVariable }) {
-  const values = variable.points.map((p) => p.value);
-  if (values.length < 2) return <div className="h-7" />;
-  const min = Math.min(...values);
-  const span = Math.max(...values) - min || 1;
-  const path = values.map((v, i) => `${(i / (values.length - 1)) * 100},${26 - ((v - min) / span) * 24}`).join(" ");
-  return (
-    <svg viewBox="0 0 100 28" preserveAspectRatio="none" className="h-7 w-full" aria-hidden>
-      <polyline points={path} fill="none" stroke="var(--tone)" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
-}
-
 function KpiCard({ variable, selected, onSelect }: { variable: PanelVariable; selected: boolean; onSelect: () => void }) {
   const change = variable.periodChange;
   const Icon = change === null || change === 0 ? Minus : change > 0 ? ArrowUpRight : ArrowDownRight;
@@ -77,7 +64,6 @@ function KpiCard({ variable, selected, onSelect }: { variable: PanelVariable; se
             {change === null ? "—" : formatChange(change, variable.change)}
             <span className="truncate text-muted-foreground">en el período</span>
           </span>
-          <Sparkline variable={variable} />
         </>
       ) : (
         <span className="py-2 text-sm text-muted-foreground">{variable.status === "error" ? "No disponible" : "Sin datos en el período"}</span>
