@@ -1,40 +1,17 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import { setWorkerUrl, type ExpressionSpecification, type FilterSpecification, type GeoJSONSourceSpecification, type StyleSpecification } from "maplibre-gl";
+import type { ExpressionSpecification, FilterSpecification, GeoJSONSourceSpecification } from "maplibre-gl";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import MapGL, { Layer, NavigationControl, Source, type MapLayerMouseEvent, type MapRef } from "react-map-gl/maplibre";
 import { AREAS, MAP_BOUNDS } from "@/lib/indicators/geography";
 import { areaColors, NO_DATA_COLOR, type MapView } from "@/lib/indicators/maps";
-import { BASEMAP_STYLE_URL, firstSymbolLayer, withoutIslandLabels } from "./basemap";
+import { firstSymbolLayer } from "./basemap";
+import { loadBasemap, MAP_BORDER, MAP_INK, MAP_LOCALE } from "./maplibre-setup";
 import { PlaceTooltip } from "./place-tooltip";
 
-// MapLibre looks for its worker next to its own module, but the bundler moves
-// that module into a chunk, so the default path returns the page instead of
-// the worker. Pointing at the file lets the bundler emit it as an asset.
-setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).href);
-
-/** The basemap style, fetched once; on failure MapLibre loads it by URL, keeping the islands' basemap label. */
-let basemap: Promise<StyleSpecification | string> | undefined;
-const loadBasemap = () =>
-  (basemap ??= fetch(BASEMAP_STYLE_URL)
-    .then((response) => (response.ok ? (response.json() as Promise<StyleSpecification>) : Promise.reject()))
-    .then(withoutIslandLabels)
-    .catch(() => BASEMAP_STYLE_URL));
-
-const LOCALE = {
-  "CooperativeGesturesHandler.WindowsHelpText": "Usá Ctrl + la rueda del mouse para acercar o alejar el mapa",
-  "CooperativeGesturesHandler.MacHelpText": "Usá ⌘ + la rueda del mouse para acercar o alejar el mapa",
-  "CooperativeGesturesHandler.MobileHelpText": "Usá dos dedos para mover el mapa",
-  "NavigationControl.ZoomIn": "Acercar",
-  "NavigationControl.ZoomOut": "Alejar",
-  "NavigationControl.ResetBearing": "Orientar al norte",
-  "AttributionControl.ToggleAttribution": "Mostrar u ocultar la atribución",
-  "Map.Title": "Mapa",
-};
-
-const INK = "#0b0b0b";
-const BORDER = "#77766f";
+const INK = MAP_INK;
+const BORDER = MAP_BORDER;
 
 const polygons: FilterSpecification = ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false];
 const points: FilterSpecification = ["==", ["geometry-type"], "Point"];
@@ -148,7 +125,7 @@ export function MapCanvas({ view }: { view: MapView }) {
         ref={mapRef}
         mapStyle={style}
         initialViewState={{ bounds: MAP_BOUNDS, fitBoundsOptions: { padding: 12 } }}
-        locale={LOCALE}
+        locale={MAP_LOCALE}
         cooperativeGestures
         attributionControl={{ compact: true }}
         dragRotate={false}
