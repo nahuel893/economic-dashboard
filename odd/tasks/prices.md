@@ -22,7 +22,7 @@ Runner: Vitest + tsc + lint + `pnpm build` + CDP checks against a local data ser
 | ID | Specs | Route | Status | Commit |
 |---|---|---|---|---|
 | T1 | S3 | inline: binary format + `scripts/prices/build-sepa.mts` with fixture tests | done | a526311, 1e07e9c |
-| T2 | S3 | inline: GitHub Actions daily job publishing release `sepa-data` (Risk item 5) | done, not yet run on GitHub | adb89d2 |
+| T2 | S3 | inline: GitHub Actions daily job publishing release `sepa-data` (Risk item 5) | done, ran on GitHub | adb89d2, 92c8d9d |
 | T3 | S1 S2 S5 | inline: server adapter (catalog, search, range read) + `/api/precios` | done | 8717d13, e308937 |
 | T4 | S1 S2 S4 S5 | inline: `/precios` page, search box, price map, summary, table, nav, references | done | cc4d954, 1966d10 |
 | T5 | S1-S5 | inline: end-to-end against a local data server, CDP checks, README | done | this commit |
@@ -49,3 +49,16 @@ Route evidence: there is one coherent feature whose units share the format contr
   - Ranking: names starting with the first query word come first ("leche serenisima" gives milk before dulce de leche).
   - Note: RED was not observed for `src/lib/indicators/prices.ts` (code and tests were written together); all other units were test-first.
 - L8 Pending: the RDD review is due (`high_risk`, shell in the workflow) and needs the user's consent. The workflow first runs after push (run it by hand), so production shows "No disponible" until then. Pushing needs the user's approval.
+- L9 (2026-11-05) The user wrote "si revisalo y pushea".
+  - RDD review review-af78dc861908c0ab (risk, resilience, reliability) was approved and acknowledged, with 9 non-blocking findings for later:
+    - same-date rebuild clobbers files that are under an in-memory index;
+    - a product read failure blanks the whole page;
+    - a version mismatch drops the stale fallback;
+    - a "0000" query matches everything;
+    - a stale Enter pick;
+    - the workflow pins actions by tag instead of SHA.
+  - Pushed main a8ccbf5.
+- L10 The first workflow run failed: setup-node@v5 read packageManager pnpm and looked for pnpm to cache.
+  - Fixed with `package-manager-cache: false` (92c8d9d). Review review-29078d96c4586c44 was approved after the user wrote "pero ya te dije que si"; pushed.
+  - Run 42150113121 succeeded in 1m32s with the same counts as local (one corrupt chain skipped).
+  - Prod: search cold 2.2 s and warm 0.37 s; a product page on a cold instance about 2.4-4 s. CDP desktop on prod was OK with no console errors.
