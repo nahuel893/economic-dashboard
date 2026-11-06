@@ -105,6 +105,16 @@ describe("SepaCollector", () => {
     expect(collector.build().products[0].slice(1, 3)).toEqual(["Leche Chocolatada Cindor 1 L", "CINDOR"]);
   });
 
+  it("leaves out a street number of zero, which SEPA uses for addresses without one", () => {
+    const sucursales = [
+      BRANCH_HEADER,
+      `9|1|1|Jumbo Lugones|Hiper|Av. Lugones esq. Cont|0|-27.80|-64.26| |x|4200|Santiago del Estero|AR-G${HOURS}`,
+    ].join("\n");
+    const collector = new SepaCollector();
+    collector.addChain(COMERCIO, sucursales);
+    expect(collector.build().branches.branches[0][2]).toBe("Av. Lugones esq. Cont");
+  });
+
   it("lists a chain name once when several banners share it", () => {
     const comercio = `${COMERCIO.split("\n")[0]}\n11|1|1|WALMART|SuperChangomas|x|y|1.0\n11|3|1|WALMART|SuperChangomas|x|y|1.0`;
     const sucursales = [

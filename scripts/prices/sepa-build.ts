@@ -29,6 +29,9 @@ const BOUNDS = { south: -56, north: -21, west: -74, east: -53 };
 
 const clean = (text: string | undefined) => (text ?? "").replace(/\s+/g, " ").trim();
 
+/** SEPA writes 0 for an address without a street number. */
+const streetNumber = (text: string | undefined) => (/^\s*0*\s*$/.test(text ?? "") ? "" : (text ?? ""));
+
 const isSkippable = (line: string) => line.trim() === "" || FOOTER.test(line);
 
 /** A SEPA CSV as its header and records, joining records split over several lines. */
@@ -174,7 +177,7 @@ export class SepaCollector {
       this.branches.push([
         chain,
         clean(row[sc.sucursales_nombre]),
-        clean(`${row[sc.sucursales_calle]} ${row[sc.sucursales_numero]}`),
+        clean(`${row[sc.sucursales_calle]} ${streetNumber(row[sc.sucursales_numero])}`),
         clean(row[sc.sucursales_localidad]),
         PROVINCE_NAMES[province] ?? province,
         lon,
