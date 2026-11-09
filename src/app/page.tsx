@@ -5,6 +5,7 @@ import {
   MarketsSection,
   PressureSection,
 } from "@/features/hot/hot-dashboard";
+import { SectionCarousel } from "@/components/dashboard/section-carousel";
 import { SourceReferences } from "@/components/dashboard/source-references";
 import { MacroGroupSection } from "@/features/macro/macro-sections";
 import { getHotSnapshot } from "@/lib/indicators/hot";
@@ -30,14 +31,39 @@ export default async function Home() {
         </header>
 
         {/* Order: the dollar first, then the real economy, then financial markets. */}
-        <DollarSection />
-        <PressureSection />
-        <MacroGroupSection snapshot={macro} id="inflation" />
-        <MacroGroupSection snapshot={macro} id="activity" />
-        <MacroGroupSection snapshot={macro} id="money" />
-        <MacroGroupSection snapshot={macro} id="rates" />
-        <MarketsSection />
-        <MacroGroupSection snapshot={macro} id="indexes" />
+        <SectionCarousel
+          label="Secciones"
+          slides={[
+            { id: "dollars", label: "Dólar", tone: "dollars", content: <DollarSection /> },
+            { id: "pressure", label: "Presión cambiaria", tone: "pressure", content: <PressureSection /> },
+            {
+              id: "inflation",
+              label: "Inflación",
+              tone: "inflation",
+              content: <MacroGroupSection snapshot={macro} id="inflation" />,
+            },
+            {
+              id: "activity",
+              label: "Actividad",
+              tone: "pressure",
+              content: <MacroGroupSection snapshot={macro} id="activity" />,
+            },
+            {
+              id: "money",
+              label: "Reservas y dinero",
+              tone: "money",
+              content: <MacroGroupSection snapshot={macro} id="money" />,
+            },
+            { id: "rates", label: "Tasas", tone: "rates", content: <MacroGroupSection snapshot={macro} id="rates" /> },
+            { id: "markets", label: "Riesgo y acciones", tone: "risk", content: <MarketsSection /> },
+            {
+              id: "indexes",
+              label: "Índices de ajuste",
+              tone: "indexes",
+              content: <MacroGroupSection snapshot={macro} id="indexes" />,
+            },
+          ]}
+        />
 
         <SourceReferences references={homeReferences()}>
           <p>Los datos de mercado pueden tener demora. No constituye asesoramiento financiero.</p>
