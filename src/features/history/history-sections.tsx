@@ -7,7 +7,8 @@ import { downsample, granularityFor, inRange, periodChange, type MonthRange } fr
 import { MARK_LAYERS, spansOnAxis, type MarkLayerKey } from "@/lib/indicators/marks";
 import type { Point } from "@/lib/indicators/types";
 import { axisLabelsFor } from "@/lib/indicators/zoom";
-import { HistoryChart, type ChartMark, type HistorySummary } from "./history-chart";
+import { HistoryChart, type ChartMark, type HistoryChartProps, type HistorySummary } from "./history-chart";
+import { VariantChart } from "./variant-chart";
 
 const GROUP_TONES: Record<HistoryGroupId, Tone> = {
   dollars: "dollars",
@@ -33,6 +34,36 @@ function chartMarks(marks: MarkLayerKey[], points: Point[]): ChartMark[] {
   );
 }
 
+/** The chart of one series of a variable over the range, or null when the range holds none of its data. */
+function chartFor(
+  variable: HistoryVariable,
+  series: Pick<HistoryVariable, "key" | "description"> & { data: Point[]; source: string },
+  range: MonthRange,
+  marks: MarkLayerKey[],
+): HistoryChartProps | null {
+  const points = inRange(series.data, range);
+  const summary = summarize(points, variable.change);
+  if (!summary) return null;
+  const granularity = granularityFor(range);
+  const chartPoints = downsample(points, granularity);
+  return {
+    variableKey: series.key,
+    range,
+    label: variable.label,
+    description: series.description,
+    unit: variable.unit,
+    frequency: variable.frequency,
+    granularity,
+    axis: axisLabelsFor(range.from, range.to),
+    change: variable.change,
+    logScale: variable.logScale,
+    points: chartPoints,
+    marks: chartMarks(marks, chartPoints),
+    summary,
+    source: series.source,
+  };
+}
+
 type VariableChartProps = { variable: HistoryVariable; range: MonthRange; marks: MarkLayerKey[] };
 
 function VariableChart({ variable, range, marks }: VariableChartProps) {
@@ -49,9 +80,8 @@ function VariableChart({ variable, range, marks }: VariableChartProps) {
     );
   }
 
-  const points = inRange(indicator.data, range);
-  const summary = summarize(points, variable.change);
-  if (!summary) {
+  const chart = chartFor(variable, { ...variable, ...indicator }, range, marks);
+  if (!chart) {
     return (
       <div style={style} className="flex flex-col gap-1 rounded-lg bg-card p-4 ring-1 ring-foreground/10">
         <h3 className="text-sm font-semibold">{variable.label}</h3>
@@ -60,26 +90,16 @@ function VariableChart({ variable, range, marks }: VariableChartProps) {
     );
   }
 
-  const granularity = granularityFor(range);
-  const chartPoints = downsample(points, granularity);
+  // Variants that failed or have no data in the range are left out of the toggle.
+  const options = (variable.variants ?? []).flatMap((variant) => {
+    if (variant.indicator.status !== "ok") return [];
+    const variantChart = chartFor(variable, { ...variant, ...variant.indicator }, range, marks);
+    return variantChart ? [{ key: variant.key, option: variant.option, chart: variantChart }] : [];
+  });
+
   return (
     <div style={style} className="min-w-0">
-      <HistoryChart
-        variableKey={variable.key}
-        range={range}
-        label={variable.label}
-        description={variable.description}
-        unit={variable.unit}
-        frequency={variable.frequency}
-        granularity={granularity}
-        axis={axisLabelsFor(range.from, range.to)}
-        change={variable.change}
-        logScale={variable.logScale}
-        points={chartPoints}
-        marks={chartMarks(marks, chartPoints)}
-        summary={summary}
-        source={indicator.source}
-      />
+      {options.length > 1 ? <VariantChart options={options} initial={variable.key} /> : <HistoryChart {...chart} />}
     </div>
   );
 }

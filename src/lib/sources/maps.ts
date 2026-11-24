@@ -8,7 +8,7 @@ import { readSheet } from "read-excel-file/node";
 import { AREAS, REGIONS, type RegionId } from "@/lib/indicators/geography";
 import type { MapSeries } from "@/lib/indicators/map-data";
 import { attempt, CACHE, type Outcome, unwrap } from "./clients";
-import { fetchJson } from "./http";
+import { fetchFile, fetchJson } from "./http";
 import {
   findOedeWorkbookUrl,
   parseBcraProvinceBalances,
@@ -34,19 +34,6 @@ const OEDE_INDEX_URL = "https://www.argentina.gob.ar/node/142211";
 /** Known wage workbook, used when the index page fails or no longer links one. */
 export const WAGES_URL =
   "https://www.argentina.gob.ar/sites/default/files/provinciales_serie_remuneraciones_mensual_2dig_9.xlsx";
-
-/** The workbook is about 11 MB, well past the JSON helper's timeout. */
-const FILE_TIMEOUT_MS = 30_000;
-
-/** Like fetchJson in ./http, for a page or a file. */
-async function fetchFile(url: string): Promise<Response> {
-  const response = await fetch(url, {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; economic-dashboard)" },
-    signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
-  });
-  if (!response.ok) throw new Error(`GET ${new URL(url).host} responded ${response.status}`);
-  return response;
-}
 
 /** The workbook of a file series linked from the OEDE index page, or the pinned one when the page fails or no longer links it. */
 async function currentOedeUrl(stem: string, pinned: string): Promise<string> {

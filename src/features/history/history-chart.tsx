@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { type ReactNode, useId, useRef, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { useTooltipActive } from "@/components/dashboard/tooltip-dismiss";
 import { useZoomDrag, ZoomBar, ZoomSlider } from "@/components/dashboard/chart-zoom";
@@ -47,7 +47,7 @@ function markLabel(text: string, row: number) {
   return MarkLabel;
 }
 
-type HistoryChartProps = {
+export type HistoryChartProps = {
   /** Stable name of the variable, used for the exported file. */
   variableKey: string;
   range: MonthRange;
@@ -64,6 +64,8 @@ type HistoryChartProps = {
   marks: ChartMark[];
   summary: HistorySummary;
   source: string;
+  /** Extra controls under the title, such as the choice of series. */
+  controls?: ReactNode;
 };
 
 function formatTick(date: string, axis: AxisLabels): string {
@@ -164,6 +166,8 @@ export function HistoryChart(props: HistoryChartProps) {
           <span className="text-xs text-muted-foreground">{formatPointDate(summary.last.date, frequency)}</span>
         </div>
       </div>
+
+      {props.controls}
 
       {points.length > 1 ? (
         <div {...zoomDrag.containerProps}>

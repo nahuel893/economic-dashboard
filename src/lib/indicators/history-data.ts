@@ -6,9 +6,8 @@ import {
   getBcraHistory,
   getCountryRiskHistory,
   getDollarHistory,
-  getIndecMonthlySeries,
+  getIndecEmae,
   getMonthlyIndexHistory,
-  INDEC_SERIES,
   SOURCES,
 } from "@/lib/sources/clients";
 import { changeOverMonths, gapHistory } from "./calc";
@@ -29,6 +28,13 @@ export type HistoryVariable = {
   /** Strictly positive levels that may span orders of magnitude, where a log axis helps. */
   logScale: boolean;
   indicator: Indicator<Point[]>;
+  /** Other series of the same chart, picked with a toggle; the one whose key is the variable's is the default. */
+  variants?: HistoryVariant[];
+};
+
+export type HistoryVariant = Pick<HistoryVariable, "key" | "description" | "indicator"> & {
+  /** Text of the toggle button. */
+  option: string;
 };
 
 export type HistoryGroup = { id: HistoryGroupId; title: string; description: string; variables: HistoryVariable[] };
@@ -50,11 +56,12 @@ export async function getHistorySnapshot(): Promise<HistorySnapshot> {
   "use cache";
   cacheLife(CACHE.daily);
 
-  // One request for both EMAE series, shared by the two activity charts.
-  const emae = getIndecMonthlySeries([INDEC_SERIES.emae, INDEC_SERIES.emaeSeasonallyAdjusted]);
+  // One download of INDEC's EMAE workbook, shared by every activity chart: INDEC
+  // revises the whole series on each release, so they must not mix sources.
+  const emae = getIndecEmae();
   emae.catch(() => undefined);
 
-  const [blue, official, mep, ccl, gap, monthly, yearly, activity, activityYearly, risk, reserves, badlar] = await Promise.all([
+  const [blue, official, mep, ccl, gap, monthly, yearly, activityOriginal, activity, activityTrend, activityYearly, risk, reserves, badlar] = await Promise.all([
     settle(SOURCES.argentinaDatos, dollar("blue")),
     settle(SOURCES.argentinaDatos, dollar("oficial")),
     settle(SOURCES.argentinaDatos, dollar("bolsa")),
@@ -64,9 +71,11 @@ export async function getHistorySnapshot(): Promise<HistorySnapshot> {
     ),
     settle(SOURCES.argentinaDatos, () => getMonthlyIndexHistory("inflacion").then(fromFloor)),
     settle(SOURCES.argentinaDatos, () => getMonthlyIndexHistory("inflacionInteranual").then(fromFloor)),
-    settle(SOURCES.indec, async () => fromFloor((await emae)[1])),
+    settle(SOURCES.indecEmae, async () => fromFloor((await emae).original)),
+    settle(SOURCES.indecEmae, async () => fromFloor((await emae).seasonallyAdjusted)),
+    settle(SOURCES.indecEmae, async () => fromFloor((await emae).trendCycle)),
     // Computed on the whole series, so the first year after the floor has its comparison month.
-    settle(SOURCES.indec, async () => fromFloor(changeOverMonths((await emae)[0], 12))),
+    settle(SOURCES.indecEmae, async () => fromFloor(changeOverMonths((await emae).original, 12))),
     settle(SOURCES.argentinaDatos, () => getCountryRiskHistory().then(fromFloor)),
     settle(SOURCES.bcra, () => getBcraHistory(BCRA_VARIABLES.reserves, BCRA_FROM)),
     settle(SOURCES.bcra, () => getBcraHistory(BCRA_VARIABLES.badlar, BCRA_FROM)),
@@ -146,6 +155,26 @@ export async function getHistorySnapshot(): Promise<HistorySnapshot> {
           change: "percent",
           logScale: false,
           indicator: activity,
+          variants: [
+            {
+              key: "activityOriginal",
+              option: "Original",
+              description: "Índice sin desestacionalizar, base 2004 = 100: muestra los vaivenes propios de cada mes del año.",
+              indicator: activityOriginal,
+            },
+            {
+              key: "activity",
+              option: "Desestacionalizada",
+              description: "Índice desestacionalizado, base 2004 = 100: si la economía produce más o menos.",
+              indicator: activity,
+            },
+            {
+              key: "activityTrend",
+              option: "Tendencia-ciclo",
+              description: "Índice de tendencia-ciclo, base 2004 = 100: la dirección de fondo, sin el ruido de mes a mes.",
+              indicator: activityTrend,
+            },
+          ],
         },
         {
           key: "activityYearly",

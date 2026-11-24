@@ -2,8 +2,10 @@ import { cacheLife } from "next/cache";
 import { monthEnd } from "@/lib/indicators/history";
 import type { IndexData, Point, Quote } from "@/lib/indicators/types";
 import { CITATION_SEPARATOR, SOURCE_NAMES } from "./citations";
-import { fetchJson } from "./http";
+import { EMAE_XLS_URL, parseIndecEmae } from "./emae";
+import { fetchFile, fetchJson } from "./http";
 import { parseBcraSeries, parseBymaIndex, parseDailyQuotes, parseDatosSeries, parseDolarApi } from "./parsers";
+import { readXls } from "./xls";
 
 /**
  * Cache lifetimes by how fast each kind of data moves. Every client caches its
@@ -55,6 +57,7 @@ export const SOURCES = {
   byma: SOURCE_NAMES.byma,
   dollars: [SOURCE_NAMES.dolarapi, SOURCE_NAMES.argentinaDatos].join(CITATION_SEPARATOR),
   indec: SOURCE_NAMES.indec,
+  indecEmae: SOURCE_NAMES.indecEmae,
 } as const;
 
 async function cachedLiveDollarQuotes(): Promise<Outcome<Record<string, Quote>>> {
@@ -172,6 +175,16 @@ async function cachedIndecMonthlySeries(ids: string[]): Promise<Outcome<Point[][
  * same order, dated at the end of each month like the other monthly sources.
  */
 export const getIndecMonthlySeries = async (ids: string[]) => unwrap(await cachedIndecMonthlySeries(ids));
+
+async function cachedIndecEmae() {
+  "use cache";
+  return attempt(CACHE.daily, async () =>
+    parseIndecEmae(readXls(new Uint8Array(await (await fetchFile(EMAE_XLS_URL)).arrayBuffer()))),
+  );
+}
+
+/** The three EMAE indexes (original, seasonally adjusted, trend-cycle) from INDEC's own workbook. */
+export const getIndecEmae = async () => unwrap(await cachedIndecEmae());
 
 async function cachedBymaIndex(symbol: string): Promise<Outcome<IndexData>> {
   "use cache";

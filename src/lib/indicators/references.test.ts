@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/cache", () => ({ cacheLife: vi.fn() }));
 
 import { citationParts } from "@/lib/sources/citations";
-import { INDEC_SERIES, SOURCES } from "@/lib/sources/clients";
+import { SOURCES } from "@/lib/sources/clients";
 import { MACRO_SOURCES } from "./macro";
 import { BCRA_BALANCES_URL, EMPLOYMENT_URL, IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
 import censusSnapshot from "@/lib/sources/snapshots/census.json";
@@ -54,12 +54,11 @@ describe("historyReferences", () => {
   const refs = historyReferences();
 
   it("lists only the sources of the history page, in order of appearance", () => {
-    expect(refs.map((ref) => ref.id)).toEqual(["argentinaDatos", "indec", "bcra"]);
+    expect(refs.map((ref) => ref.id)).toEqual(["argentinaDatos", "indecEmae", "bcra"]);
   });
 
-  it("documents both EMAE series and the BCRA variables it charts", () => {
-    expect(details(refs, "indec").join(" ")).toContain(INDEC_SERIES.emae);
-    expect(details(refs, "indec").join(" ")).toContain(INDEC_SERIES.emaeSeasonallyAdjusted);
+  it("documents the EMAE workbook and the BCRA variables it charts", () => {
+    expect(details(refs, "indecEmae")).toEqual(["sh_emae_mensual_base2004.xls"]);
     expect(details(refs, "bcra")).toEqual(["Variable 1", "Variable 7"]);
   });
 });

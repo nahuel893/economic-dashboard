@@ -23,3 +23,16 @@ export async function fetchJson<T>(url: string, options: FetchJsonOptions = {}):
   }
   return (await response.json()) as T;
 }
+
+/** Workbooks can weigh several MB (the OEDE wages one is about 11 MB), well past the JSON timeout. */
+const FILE_TIMEOUT_MS = 30_000;
+
+/** Like fetchJson, for a page or a file. */
+export async function fetchFile(url: string): Promise<Response> {
+  const response = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; economic-dashboard)" },
+    signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`GET ${new URL(url).host} responded ${response.status}`);
+  return response;
+}

@@ -3,7 +3,8 @@
  * Cards and charts cite only the short name (`SOURCE_NAMES`) and link here.
  */
 import { SOURCE_NAMES, type SourceId } from "@/lib/sources/citations";
-import { BCRA_VARIABLES, INDEC_SERIES } from "@/lib/sources/clients";
+import { BCRA_VARIABLES } from "@/lib/sources/clients";
+import { EMAE_XLS_URL } from "@/lib/sources/emae";
 import { BCRA_BALANCES_URL, EMPLOYMENT_URL, IPC_REGION_SERIES, WAGES_URL } from "@/lib/sources/maps";
 import censusSnapshot from "@/lib/sources/snapshots/census.json";
 import povertySnapshot from "@/lib/sources/snapshots/eph-poverty.json";
@@ -78,6 +79,14 @@ const base = {
     url: "https://datos.gob.ar/series/",
     description:
       "Índice de volumen físico, base 2004 = 100, que aproxima el PBI mes a mes. Las variaciones las calcula este tablero a partir del índice.",
+  },
+  indecEmae: {
+    id: "indecEmae",
+    name: SOURCE_NAMES.indecEmae,
+    title: "INDEC, Estimador Mensual de Actividad Económica (EMAE), base 2004",
+    url: "https://www.indec.gob.ar",
+    description:
+      "Planilla del INDEC con el índice de volumen físico, base 2004 = 100, en sus series original, desestacionalizada y tendencia-ciclo. Se actualiza el día de cada publicación, antes que la API de datos.gob.ar.",
   },
   byma: {
     id: "byma",
@@ -196,12 +205,15 @@ export function historyReferences(): Reference[] {
       note: INFLATION_NOTE,
     },
     {
-      ...base.indec,
+      ...base.indecEmae,
       items: [
-        indecItem("Nivel de actividad", INDEC_SERIES.emaeSeasonallyAdjusted, "serie desestacionalizada"),
-        indecItem("Actividad, variación interanual", INDEC_SERIES.emae, "serie original"),
+        {
+          label: "Nivel de actividad (series original, desestacionalizada y tendencia-ciclo) y variación interanual de la serie original",
+          detail: fileName(EMAE_XLS_URL),
+          url: EMAE_XLS_URL,
+        },
       ],
-      update: "Se consulta cada hora; el INDEC publica el EMAE una vez por mes.",
+      update: "Se consulta cada hora; el INDEC publica el EMAE una vez por mes y revisa toda la serie en cada publicación.",
     },
     {
       ...base.bcra,

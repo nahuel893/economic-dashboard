@@ -5,7 +5,8 @@ import departmentPlaces from "./snapshots/department-places.json";
 
 const { cacheLife, fetchJson } = vi.hoisted(() => ({ cacheLife: vi.fn(), fetchJson: vi.fn() }));
 vi.mock("next/cache", () => ({ cacheLife }));
-vi.mock("./http", () => ({ fetchJson }));
+// Only the JSON helper is mocked: files go through the real fetchFile and the stubbed global fetch.
+vi.mock("./http", async (importOriginal) => ({ ...(await importOriginal<typeof import("./http")>()), fetchJson }));
 
 import { CACHE } from "./clients";
 import {

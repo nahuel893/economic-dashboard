@@ -69,6 +69,7 @@ One line chart per variable (dollars, gap, inflation, economic activity, country
 - Each chart zooms on its own: drag across it with the mouse, or move the slider under it (it works with a finger too). The axes and marks refit to the visible dates, and min, max and change keep describing the whole period. Double click or **Restablecer zoom** goes back; changing the period clears the zoom.
 - On phones, touch never zooms a chart, so scrolling and pinch-zooming the page work as usual.
 - **Exportar video** downloads a 10-second 1920×1080 animation of the chart as shown, with its window, scale and marks: the line draws itself with a bubble on its latest value, and value labels stay on the start of each period. It is recorded in the browser (MP4 where supported, WebM otherwise), so keep the tab visible while it records.
+- The activity level chart switches between INDEC's three EMAE series: **Original**, **Desestacionalizada** (the default) and **Tendencia-ciclo**. Every activity chart reads INDEC's own workbook (`sh_emae_mensual_base2004.xls`), which is updated on release day, days before the datos.gob.ar API; INDEC revises the whole series each time, so the two sources are never mixed on one page.
 - Optional marks add context to every chart and can be combined. The first layer, **Presidencias**, shades each presidential term from its inauguration day and names the president in the tooltip. Active layers are kept in the URL (`?marcas=presidencias`).
 
 ### Mapas: where things happen
@@ -112,7 +113,8 @@ Search any product with a barcode (by name, brand or barcode) and see its list p
 |--------|----------|
 | [dolarapi.com](https://dolarapi.com) | Live dollar quotes |
 | [ArgentinaDatos](https://argentinadatos.com) | Dollar history, inflation, country risk |
-| [INDEC via datos.gob.ar](https://datos.gob.ar/series) | Economic activity (EMAE) |
+| [INDEC via datos.gob.ar](https://datos.gob.ar/series) | Economic activity (EMAE) on Hoy and Panel |
+| [INDEC, EMAE workbook](https://www.indec.gob.ar/ftp/cuadros/economia/sh_emae_mensual_base2004.xls) | Economic activity: original, seasonally adjusted and trend-cycle series (Histórico) |
 | [BCRA, Estadísticas v4](https://www.bcra.gob.ar/en/central-bank-api-catalog/) | Reserves, money, rates, REM, indexes, exchange-rate band |
 | [BYMA open data](https://open.bymadata.com.ar) | Merval |
 | [OEDE, Ministerio de Capital Humano](https://www.argentina.gob.ar/node/142211) | Wages (monthly) and registered employment (quarterly) by province (Mapas) |

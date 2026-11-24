@@ -2,13 +2,14 @@
  * Short source names cited on cards and charts, and the anchors of their full
  * reference at the bottom of the page. Client-safe: no data fetching here.
  */
-export type SourceId = "dolarapi" | "argentinaDatos" | "bcra" | "indec" | "byma" | "oede" | "indecEph" | "indecOpex" | "indecCenso" | "sepa";
+export type SourceId = "dolarapi" | "argentinaDatos" | "bcra" | "indec" | "indecEmae" | "byma" | "oede" | "indecEph" | "indecOpex" | "indecCenso" | "sepa";
 
 export const SOURCE_NAMES: Record<SourceId, string> = {
   dolarapi: "dolarapi.com",
   argentinaDatos: "ArgentinaDatos",
   bcra: "BCRA",
   indec: "INDEC vía datos.gob.ar",
+  indecEmae: "INDEC, EMAE",
   byma: "BYMA",
   oede: "OEDE (SIPA)",
   indecEph: "INDEC, EPH",
