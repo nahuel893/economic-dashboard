@@ -61,7 +61,7 @@ export async function getHistorySnapshot(): Promise<HistorySnapshot> {
   const emae = getIndecEmae();
   emae.catch(() => undefined);
 
-  const [blue, official, mep, ccl, gap, monthly, yearly, activityOriginal, activity, activityTrend, activityYearly, risk, reserves, badlar] = await Promise.all([
+  const [blue, official, mep, ccl, gap, monthly, yearly, activityOriginal, activity, activityTrend, activityMonthly, activityYearly, risk, reserves, badlar] = await Promise.all([
     settle(SOURCES.argentinaDatos, dollar("blue")),
     settle(SOURCES.argentinaDatos, dollar("oficial")),
     settle(SOURCES.argentinaDatos, dollar("bolsa")),
@@ -74,7 +74,8 @@ export async function getHistorySnapshot(): Promise<HistorySnapshot> {
     settle(SOURCES.indecEmae, async () => fromFloor((await emae).original)),
     settle(SOURCES.indecEmae, async () => fromFloor((await emae).seasonallyAdjusted)),
     settle(SOURCES.indecEmae, async () => fromFloor((await emae).trendCycle)),
-    // Computed on the whole series, so the first year after the floor has its comparison month.
+    // Computed on the whole series, so the first months after the floor have their comparison month.
+    settle(SOURCES.indecEmae, async () => fromFloor(changeOverMonths((await emae).seasonallyAdjusted, 1))),
     settle(SOURCES.indecEmae, async () => fromFloor(changeOverMonths((await emae).original, 12))),
     settle(SOURCES.argentinaDatos, () => getCountryRiskHistory().then(fromFloor)),
     settle(SOURCES.bcra, () => getBcraHistory(BCRA_VARIABLES.reserves, BCRA_FROM)),
@@ -175,6 +176,16 @@ export async function getHistorySnapshot(): Promise<HistorySnapshot> {
               indicator: activityTrend,
             },
           ],
+        },
+        {
+          key: "activityMonthly",
+          label: "Actividad, variación mensual",
+          description: "Contra el mes anterior, con la serie desestacionalizada.",
+          unit: "percent",
+          frequency: "monthly",
+          change: "points",
+          logScale: false,
+          indicator: activityMonthly,
         },
         {
           key: "activityYearly",

@@ -137,11 +137,6 @@ const INFLATION_NOTE = "La inflación mensual e interanual son datos del INDEC."
 /** References of "Hoy", in the order the sources first appear on the page. */
 export function homeReferences(): Reference[] {
   const macroBcra = MACRO_SOURCES.flatMap(({ label, source }) => (source.kind === "bcra" ? [bcraItem(label, source.id)] : []));
-  const macroIndec = MACRO_SOURCES.flatMap(({ label, source }) =>
-    source.kind === "indec"
-      ? [indecItem(label, source.seriesId, source.change === "yoy" ? "serie original" : "serie desestacionalizada")]
-      : [],
-  );
 
   return [
     {
@@ -172,9 +167,15 @@ export function homeReferences(): Reference[] {
       note: `${INFLATION_NOTE} La inflación esperada es la mediana del Relevamiento de Expectativas de Mercado (REM). La tasa real esperada la calcula este tablero con el plazo fijo a 30 días y la inflación esperada.`,
     },
     {
-      ...base.indec,
-      items: macroIndec,
-      update: "Se consulta cada hora; el INDEC publica el EMAE una vez por mes.",
+      ...base.indecEmae,
+      items: [
+        {
+          label: "Actividad: variación interanual de la serie original y variación mensual de la desestacionalizada",
+          detail: fileName(EMAE_XLS_URL),
+          url: EMAE_XLS_URL,
+        },
+      ],
+      update: "Se consulta cada hora; el INDEC publica el EMAE una vez por mes y revisa toda la serie en cada publicación.",
     },
     {
       ...base.byma,
@@ -208,7 +209,7 @@ export function historyReferences(): Reference[] {
       ...base.indecEmae,
       items: [
         {
-          label: "Nivel de actividad (series original, desestacionalizada y tendencia-ciclo) y variación interanual de la serie original",
+          label: "Nivel de actividad (series original, desestacionalizada y tendencia-ciclo), variación mensual de la desestacionalizada e interanual de la original",
           detail: fileName(EMAE_XLS_URL),
           url: EMAE_XLS_URL,
         },

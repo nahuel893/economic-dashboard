@@ -34,18 +34,18 @@ describe("homeReferences", () => {
   const refs = homeReferences();
 
   it("lists every source of the page in order of appearance", () => {
-    expect(refs.map((ref) => ref.id)).toEqual(["dolarapi", "argentinaDatos", "bcra", "indec", "byma"]);
+    expect(refs.map((ref) => ref.id)).toEqual(["dolarapi", "argentinaDatos", "bcra", "indecEmae", "byma"]);
   });
 
   it("names each source as the cards cite it", () => {
     for (const ref of refs) expect(citationParts(ref.name)).toEqual([{ name: ref.name, id: ref.id }]);
   });
 
-  it("documents every BCRA variable and INDEC series shown on the page", () => {
+  it("documents every BCRA variable and the EMAE workbook shown on the page", () => {
     for (const { source } of MACRO_SOURCES) {
       if (source.kind === "bcra") expect(details(refs, "bcra")).toContain(`Variable ${source.id}`);
-      else expect(details(refs, "indec").some((detail) => detail.includes(source.seriesId))).toBe(true);
     }
+    expect(details(refs, "indecEmae")).toEqual(["sh_emae_mensual_base2004.xls"]);
     expect(details(refs, "bcra")).toEqual(expect.arrayContaining(["Variable 5", "Variable 1187", "Variable 1188"]));
   });
 });

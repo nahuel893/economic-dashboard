@@ -152,14 +152,6 @@ async function cachedBcraSeries(id: number, days: number, cache: keyof typeof CA
 export const getBcraSeries = async (id: number, days: number, cache: keyof typeof CACHE) =>
   unwrap(await cachedBcraSeries(id, days, cache));
 
-/** INDEC series on the datos.gob.ar series API. */
-export const INDEC_SERIES = {
-  /** EMAE (monthly activity, the usual monthly proxy for GDP), base 2004, original series. */
-  emae: "143.3_NO_PR_2004_A_21",
-  /** EMAE, seasonally adjusted. */
-  emaeSeasonallyAdjusted: "143.3_NO_PR_2004_A_31",
-} as const;
-
 async function cachedIndecMonthlySeries(ids: string[]): Promise<Outcome<Point[][]>> {
   "use cache";
   return attempt(CACHE.daily, async () => {

@@ -113,8 +113,7 @@ Search any product with a barcode (by name, brand or barcode) and see its list p
 |--------|----------|
 | [dolarapi.com](https://dolarapi.com) | Live dollar quotes |
 | [ArgentinaDatos](https://argentinadatos.com) | Dollar history, inflation, country risk |
-| [INDEC via datos.gob.ar](https://datos.gob.ar/series) | Economic activity (EMAE) on Hoy and Panel |
-| [INDEC, EMAE workbook](https://www.indec.gob.ar/ftp/cuadros/economia/sh_emae_mensual_base2004.xls) | Economic activity: original, seasonally adjusted and trend-cycle series (Histórico) |
+| [INDEC, EMAE workbook](https://www.indec.gob.ar/ftp/cuadros/economia/sh_emae_mensual_base2004.xls) | Economic activity: original, seasonally adjusted and trend-cycle series, monthly and year-on-year changes (Hoy, Panel and Histórico) |
 | [BCRA, Estadísticas v4](https://www.bcra.gob.ar/en/central-bank-api-catalog/) | Reserves, money, rates, REM, indexes, exchange-rate band |
 | [BYMA open data](https://open.bymadata.com.ar) | Merval |
 | [OEDE, Ministerio de Capital Humano](https://www.argentina.gob.ar/node/142211) | Wages (monthly) and registered employment (quarterly) by province (Mapas) |

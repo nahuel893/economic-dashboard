@@ -1,6 +1,7 @@
 import { cacheLife } from "next/cache";
 import type { Unit } from "@/lib/format";
-import { CACHE, INDEC_SERIES, SOURCES, getBcraSeries, getIndecMonthlySeries } from "@/lib/sources/clients";
+import { CACHE, SOURCES, getBcraSeries, getIndecEmae } from "@/lib/sources/clients";
+import type { EmaeSeries } from "@/lib/sources/emae";
 import { changeOverMonths, lastN, realRate, tnaToTea, toSeries, type Series } from "./calc";
 import { settle } from "./settle";
 import type { Indicator, Point } from "./types";
@@ -14,10 +15,13 @@ export type Frequency = "daily" | "monthly";
  * Variables"), or an INDEC index on datos.gob.ar shown as its change over 12
  * months ("yoy") or over the previous month ("mom").
  */
-export type MacroSource = { kind: "bcra"; id: number } | { kind: "indec"; seriesId: string; change: "yoy" | "mom" };
+export type MacroSource =
+  | { kind: "bcra"; id: number }
+  /** A change of one of the series of INDEC's EMAE workbook, the same file "Histórico" reads. */
+  | { kind: "emae"; series: keyof EmaeSeries; change: "yoy" | "mom" };
 
 const bcra = (id: number): MacroSource => ({ kind: "bcra", id });
-const indec = (seriesId: string, change: "yoy" | "mom"): MacroSource => ({ kind: "indec", seriesId, change });
+const emae = (series: keyof EmaeSeries, change: "yoy" | "mom"): MacroSource => ({ kind: "emae", series, change });
 
 type MacroVariable = {
   key: string;
@@ -62,8 +66,8 @@ const GROUPS: { id: MacroGroupId; title: string; description: string; variables:
     title: "Actividad económica",
     description: "El PBI mes a mes: Estimador Mensual de Actividad Económica (EMAE) del INDEC.",
     variables: [
-      { key: "activityYearly", source: indec(INDEC_SERIES.emae, "yoy"), label: "Actividad, variación interanual", unit: "percent", delta: "points", frequency: "monthly", note: "Contra el mismo mes del año anterior", chart: "columns" },
-      { key: "activityMonthly", source: indec(INDEC_SERIES.emaeSeasonallyAdjusted, "mom"), label: "Actividad, variación mensual", unit: "percent", delta: "points", frequency: "monthly", note: "Serie desestacionalizada", chart: "columns" },
+      { key: "activityYearly", source: emae("original", "yoy"), label: "Actividad, variación interanual", unit: "percent", delta: "points", frequency: "monthly", note: "Contra el mismo mes del año anterior", chart: "columns" },
+      { key: "activityMonthly", source: emae("seasonallyAdjusted", "mom"), label: "Actividad, variación mensual", unit: "percent", delta: "points", frequency: "monthly", note: "Serie desestacionalizada", chart: "columns" },
     ],
   },
   {
@@ -119,7 +123,7 @@ export type MacroSnapshot = { groups: MacroGroup[]; realRate: Indicator<RealRate
 
 async function loadSource(source: MacroSource, days: number): Promise<Point[]> {
   if (source.kind === "bcra") return getBcraSeries(source.id, days, "daily");
-  const [index] = await getIndecMonthlySeries([source.seriesId]);
+  const index = (await getIndecEmae())[source.series];
   return changeOverMonths(index, source.change === "yoy" ? 12 : 1);
 }
 
@@ -134,7 +138,7 @@ export async function getMacroSnapshot(): Promise<MacroSnapshot> {
       items: await Promise.all(
         variables.map(async ({ source, ...variable }) => {
           const { days, points, longPoints } = LOOKBACK[variable.frequency];
-          const indicator = await settle<MacroSeries>(source.kind === "bcra" ? SOURCES.bcra : SOURCES.indec, async () => {
+          const indicator = await settle<MacroSeries>(source.kind === "bcra" ? SOURCES.bcra : SOURCES.indecEmae, async () => {
             const all = await loadSource(source, days);
             return { ...toSeries(all, points), longHistory: lastN(all, longPoints) };
           });
